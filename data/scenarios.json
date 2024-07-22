@@ -1,0 +1,59 @@
+[
+    {
+      "id": "feeding_time",
+      "description": "Your pet looks hungry. What will you do?",
+      "choices": [
+        {
+          "text": "Feed your pet",
+          "action": "feed_pet"
+        },
+        {
+          "text": "Ignore and play instead",
+          "action": "play_with_pet"
+        }
+      ],
+      "auto_update": "auto_update_hunger"
+    },
+    {
+      "id": "play_time",
+      "description": "Your pet seems energetic. What's your move?",
+      "choices": [
+        {
+          "text": "Play with your pet",
+          "action": "play_with_pet"
+        },
+        {
+          "text": "Let it nap instead",
+          "action": "let_pet_nap"
+        }
+      ]
+    },
+    {
+      "id": "nap_time",
+      "description": "Your pet looks tired. What do you decide?",
+      "choices": [
+        {
+          "text": "Let your pet nap",
+          "action": "let_pet_nap"
+        },
+        {
+          "text": "Keep playing",
+          "action": "play_with_pet"
+        }
+      ]
+    },
+    {
+      "id": "grooming_time",
+      "description": "Your pet could use some grooming. What's your choice?",
+      "choices": [
+        {
+          "text": "Groom your pet",
+          "action": "groom_pet"
+        },
+        {
+          "text": "Ignore and let it be",
+          "action": "ignore_pet"
+        }
+      ]
+    }
+  ]
