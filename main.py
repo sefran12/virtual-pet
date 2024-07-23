@@ -2,80 +2,67 @@ from src.core.pet import Pet
 from src.core.states import EmotionalState, PhysicalState, PhysicalDescription, LatentVariable
 from src.core.memory import LongTermMemory, ShortTermMemory
 from src.game.game import Game
-from src.game.scenario import Scenario
-from src.game.choices import ScenarioChoice
+from src.game.scenario import generate_dynamic_scenario
 
-def create_sample_pet():
+
+def create_initial_pet():
+    emotional_state = EmotionalState([
+        LatentVariable("happiness", 50),
+        LatentVariable("excitement", 50),
+        LatentVariable("calmness", 50),
+        LatentVariable("curiosity", 50),
+        LatentVariable("affection", 50)
+    ])
+    physical_state = PhysicalState(
+        variables=[
+            LatentVariable("hunger", 50),
+            LatentVariable("tiredness", 50),
+            LatentVariable("health", 50),
+            LatentVariable("cleanliness", 50)
+        ],
+        description=PhysicalDescription(
+            species="dog",
+            color="golden",
+            size="medium",
+            distinctive_features=["floppy ears", "wagging tail"]
+        )
+    )
     return Pet(
-        name="Whiskers",
-        age=3,
-        emotional_state=EmotionalState([
-            LatentVariable("happiness", 0),
-            LatentVariable("excitement", 0),
-            LatentVariable("calmness", 0),
-            LatentVariable("curiosity", 0),
-            LatentVariable("affection", 0)
-        ]),
-        physical_state=PhysicalState(
-            variables=[
-                LatentVariable("hunger", 0),
-                LatentVariable("tiredness", 0),
-                LatentVariable("health", 100),
-                LatentVariable("cleanliness", 100)
-            ],
-            description=PhysicalDescription(
-                species="cat",
-                color="orange tabby",
-                size="medium",
-                distinctive_features=["bright green eyes", "fluffy tail"]
-            )
-        ),
+        emotional_state=emotional_state,
+        physical_state=physical_state,
         long_term_memory=LongTermMemory(),
-        short_term_memory=ShortTermMemory()
+        short_term_memory=ShortTermMemory(),
+        name="Buddy",
+        age=3
     )
 
 def main():
-    pet = create_sample_pet()
+    pet = create_initial_pet()
+    initial_scenario = generate_dynamic_scenario(pet, None, None, None)
+    game = Game(pet, initial_scenario)
 
-    # Define choice actions
-    def feed_pet(game):
-        game.update_pet("Feed the pet a healthy meal")
-        game.change_scenario("play_time")
+    while True:
+        print(game.current_scenario.description)
+        for i, choice in enumerate(game.current_scenario.choices, 1):
+            print(f"{i}. {choice.text}")
+        print(f"{len(game.current_scenario.choices) + 1}. [Freeform Action]")
+        print("Additional options:")
+        print("- Enter 'state' to see detailed pet state")
+        print("- Enter 'memories' to see pet's memories")
+        print("- Enter 'quit' to exit the game")
 
-    def play_with_pet(game):
-        game.update_pet("Play with the pet using a toy")
-        game.change_scenario("nap_time")
+        user_input = input("Enter your choice: ")
+        if user_input.lower() == 'quit':
+            break
 
-    def let_pet_nap(game):
-        game.update_pet("Let the pet take a nap")
-        game.change_scenario("grooming_time")
+        result = game.process_message(user_input)
+        
+        if 'special_action' in result:
+            print(result['content'])
+        else:
+            print(f"Pet's response: {result['pet_response']}")
+            print(result["pet_state"])
 
-    def groom_pet(game):
-        game.update_pet("Groom the pet gently")
-        game.change_scenario("feeding_time")
-
-    def ignore_pet(game):
-        game.update_pet("Ignore the pet")
-        game.change_scenario("feeding_time")
-
-    def auto_update_hunger(game):
-        hunger = next(var for var in game.pet.physical_state.variables if var.name == "hunger")
-        hunger.value += 10
-        print("Your pet is getting hungrier...")
-
-    choice_actions = {
-        "feed_pet": feed_pet,
-        "play_with_pet": play_with_pet,
-        "let_pet_nap": let_pet_nap,
-        "groom_pet": groom_pet,
-        "ignore_pet": ignore_pet,
-        "auto_update_hunger": auto_update_hunger
-    }
-
-    # Load scenarios from JSON
-    game = Game.from_json(pet, "data/scenarios.json", choice_actions)
-
-    game.start()
 
 if __name__ == "__main__":
     main()

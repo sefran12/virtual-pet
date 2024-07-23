@@ -1,3 +1,4 @@
+# src\core\pet.py
 from dataclasses import dataclass
 from .states import EmotionalState, PhysicalState
 from .memory import LongTermMemory, ShortTermMemory
