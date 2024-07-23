@@ -1,4 +1,4 @@
-# src\core\pet.py
+# src/core/pet.py
 from dataclasses import dataclass
 from .states import EmotionalState, PhysicalState
 from .memory import LongTermMemory, ShortTermMemory
@@ -19,11 +19,7 @@ class Pet:
     short_term_memory: ShortTermMemory
     name: str
     age: int
-
-    def update_physical_description(self):
-        # This method can be called to update the physical description based on the pet's current state
-        # Implementation will depend on how you want to handle physical changes
-        pass
+    species: str
 
     def process_interaction(self, interaction: str) -> str:
         # Store initial states
@@ -63,15 +59,13 @@ class Pet:
         self.physical_state = new_physical_state
         self.short_term_memory.events.append(memory)
 
-        # Update physical description
-        self.update_physical_description()
-
         return response
 
     def summarize_state(self) -> str:
         return f"""
         Name: {self.name}
         Age: {self.age}
+        Species: {self.species}
         Physical Description: {self.physical_state.description}
         Emotional State: {self.emotional_state}
         Physical State: {self.physical_state.variables}

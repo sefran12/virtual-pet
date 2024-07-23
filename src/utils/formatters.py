@@ -9,7 +9,7 @@ Emotional State:
 Physical State:
 {', '.join([f'{v.name}: {v.value}' for v in pet.physical_state.variables])}
 
-Description: {pet.physical_state.description.species.capitalize()} - {pet.physical_state.description.color}, {pet.physical_state.description.size}
+Description: {pet.physical_state.description.species.capitalize()} - {pet.physical_state.description.color}, {pet.physical_state.description.size} - Age {pet.age} years
 Distinctive features: {', '.join(pet.physical_state.description.distinctive_features)}
     """
     return formatted_state.strip()

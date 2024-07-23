@@ -1,4 +1,5 @@
 # src\core\updaters.py
+from typing import List, Dict
 import os
 import json
 from openai import OpenAI
@@ -221,3 +222,44 @@ def process_interaction_for_pet_response(
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return "The pet's reaction is hard to interpret."
+    
+def update_pet_physical_description(pet: 'Pet', chapter_narrative: List[Dict[str, str]]) -> PhysicalDescription:
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = f"""
+    You are an AI assistant that updates the physical description of a virtual pet based on its experiences throughout a chapter.
+    Consider the pet's current state, age, and the events it has gone through to create a new, evolved description.
+
+    Current pet state:
+    {pet.summarize_state()}
+
+    Chapter narrative summary:
+    {json.dumps(chapter_narrative, indent=2)}
+
+    Generate a new physical description for the pet, including possible changes to its species, color, size, and distinctive features.
+    Your response should be a valid JSON object with 'species', 'color', 'size', and 'distinctive_features' fields.
+    The 'distinctive_features' field should be a list of strings.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": "Generate an updated physical description for the pet based on its experiences in this chapter."}
+            ]
+        )
+
+        new_description_data = json.loads(response.choices[0].message.content)
+        
+        return PhysicalDescription(
+            species=new_description_data['species'],
+            color=new_description_data['color'],
+            size=new_description_data['size'],
+            distinctive_features=new_description_data['distinctive_features']
+        )
+
+    except Exception as e:
+        print(f"An error occurred while updating the pet's physical description: {str(e)}")
+        return pet.physical_state.description  # Return the current description if there's an error

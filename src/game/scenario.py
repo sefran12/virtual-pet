@@ -38,11 +38,50 @@ def load_random_events(file_path: str) -> List[RandomEvent]:
         events_data = json.load(f)
     return [RandomEvent(**event) for event in events_data]
 
+from dataclasses import dataclass, field
+from typing import List, Optional
+from .choices import ScenarioChoice
+import random
+import json
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+@dataclass
+class Scenario:
+    id: str
+    description: str
+    choices: List[ScenarioChoice]
+
+@dataclass
+class ScenarioTemplate:
+    id: str
+    description_template: str
+    choice_templates: List[dict]
+
+@dataclass
+class RandomEvent:
+    description: str
+    probability: float
+
+def load_scenario_templates(file_path: str) -> List[ScenarioTemplate]:
+    with open(file_path, 'r') as f:
+        templates_data = json.load(f)
+    return [ScenarioTemplate(**template) for template in templates_data]
+
+def load_random_events(file_path: str) -> List[RandomEvent]:
+    with open(file_path, 'r') as f:
+        events_data = json.load(f)
+    return [RandomEvent(**event) for event in events_data]
+
 def generate_dynamic_scenario(
     pet: 'Pet',
     previous_scenario: Optional[Scenario],
     last_interaction: Optional[str],
-    last_pet_response: Optional[str]
+    last_pet_response: Optional[str],
+    current_chapter: 'Chapter'
 ) -> Scenario:
     templates = load_scenario_templates('data/scenario_templates.json')
     random_events = load_random_events('data/random_events.json')
@@ -59,7 +98,7 @@ def generate_dynamic_scenario(
 
     system_message = f"""
     You are an AI assistant that generates dynamic scenarios for a virtual pet game.
-    Use the given template, the pet's current state, previous scenario, last interaction, and pet response to create a unique and engaging scenario.
+    Use the given template, the pet's current state, previous scenario, last interaction, pet response, and current chapter information to create a unique and engaging scenario.
 
     Pet's current state:
     {pet.summarize_state()}
@@ -73,6 +112,11 @@ def generate_dynamic_scenario(
     Last pet response:
     {last_pet_response if last_pet_response else "No previous pet response"}
 
+    Current Chapter:
+    Title: {current_chapter.title}
+    Description: {current_chapter.description}
+    Completed Events: {', '.join(current_chapter.completed_events)}
+
     Random event (if any):
     {random_event.description if random_event else "No random event"}
 
@@ -83,6 +127,7 @@ def generate_dynamic_scenario(
     Your response should be a valid JSON object with 'description' and 'choices' fields.
     The 'choices' field should be a list of objects, each with 'text' and 'action' fields.
     Incorporate the random event into the scenario if one is present.
+    Ensure the scenario aligns with the current chapter's narrative and the pet's development.
     """
 
     try:
