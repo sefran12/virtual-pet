@@ -99,6 +99,7 @@ def generate_dynamic_scenario(
     system_message = f"""
     You are an AI assistant that generates dynamic scenarios for a virtual pet game.
     Use the given template, the pet's current state, previous scenario, last interaction, pet response, and current chapter information to create a unique and engaging scenario.
+    Ensure the narrative flows continuously from the previous scenario and interaction, without arbitrarily starting a new day unless it's narratively appropriate.
 
     Pet's current state:
     {pet.summarize_state()}
@@ -128,6 +129,7 @@ def generate_dynamic_scenario(
     The 'choices' field should be a list of objects, each with 'text' and 'action' fields.
     Incorporate the random event into the scenario if one is present.
     Ensure the scenario aligns with the current chapter's narrative and the pet's development.
+    Maintain narrative continuity from the previous scenario and interaction.
     """
 
     try:
