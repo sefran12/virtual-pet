@@ -1,0 +1,20 @@
+[
+    {
+        "id": "daily_routine",
+        "description_template": "It's a new day for {pet_name}. What would you like to do?",
+        "choice_templates": [
+            {"text": "Feed {pet_name}", "action": "feed"},
+            {"text": "Play with {pet_name}", "action": "play"},
+            {"text": "Let {pet_name} rest", "action": "rest"}
+        ]
+    },
+    {
+        "id": "unexpected_event",
+        "description_template": "Something unexpected happens to {pet_name}...",
+        "choice_templates": [
+            {"text": "Investigate", "action": "investigate"},
+            {"text": "Ignore", "action": "ignore"},
+            {"text": "Call for help", "action": "call_help"}
+        ]
+    }
+]

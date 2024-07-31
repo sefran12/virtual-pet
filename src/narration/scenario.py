@@ -2,45 +2,7 @@
 # src/game/scenario.py
 from dataclasses import dataclass, field
 from typing import List, Optional
-from .choices import ScenarioChoice
-import random
-import json
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-@dataclass
-class Scenario:
-    id: str
-    description: str
-    choices: List[ScenarioChoice]
-
-@dataclass
-class ScenarioTemplate:
-    id: str
-    description_template: str
-    choice_templates: List[dict]
-
-@dataclass
-class RandomEvent:
-    description: str
-    probability: float
-
-def load_scenario_templates(file_path: str) -> List[ScenarioTemplate]:
-    with open(file_path, 'r') as f:
-        templates_data = json.load(f)
-    return [ScenarioTemplate(**template) for template in templates_data]
-
-def load_random_events(file_path: str) -> List[RandomEvent]:
-    with open(file_path, 'r') as f:
-        events_data = json.load(f)
-    return [RandomEvent(**event) for event in events_data]
-
-from dataclasses import dataclass, field
-from typing import List, Optional
-from .choices import ScenarioChoice
+from ..game.choices import ScenarioChoice
 import random
 import json
 from openai import OpenAI
@@ -97,39 +59,31 @@ def generate_dynamic_scenario(
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     system_message = f"""
-    You are an AI assistant that generates dynamic scenarios for a virtual pet game.
-    Use the given template, the pet's current state, previous scenario, last interaction, pet response, and current chapter information to create a unique and engaging scenario.
-    Ensure the narrative flows continuously from the previous scenario and interaction, without arbitrarily starting a new day unless it's narratively appropriate.
-
-    Pet's current state:
+    Sei un assistente AI che genera scenari dinamici per un gioco di animali virtuali.
+    Usa il modello fornito, lo stato attuale dell'animale, lo scenario precedente, l'ultima interazione, la risposta dell'animale e le informazioni sul capitolo attuale per creare uno scenario unico e coinvolgente.
+    Assicurati che la narrazione fluisca continuamente dallo scenario e dall'interazione precedenti, senza iniziare arbitrariamente un nuovo giorno a meno che non sia narrativamente appropriato.
+    Stato attuale dell'animale:
     {pet.summarize_state()}
-
-    Previous scenario:
-    {previous_scenario.description if previous_scenario else "No previous scenario"}
-
-    Last interaction:
-    {last_interaction if last_interaction else "No previous interaction"}
-
-    Last pet response:
-    {last_pet_response if last_pet_response else "No previous pet response"}
-
-    Current Chapter:
-    Title: {current_chapter.title}
-    Description: {current_chapter.description}
-    Completed Events: {', '.join(current_chapter.completed_events)}
-
-    Random event (if any):
-    {random_event.description if random_event else "No random event"}
-
-    Scenario Template:
+    Scenario precedente:
+    {previous_scenario.description if previous_scenario else "Nessuno scenario precedente"}
+    Ultima interazione:
+    {last_interaction if last_interaction else "Nessuna interazione precedente"}
+    Ultima risposta dell'animale:
+    {last_pet_response if last_pet_response else "Nessuna risposta precedente dell'animale"}
+    Capitolo attuale:
+    Titolo: {current_chapter.title}
+    Descrizione: {current_chapter.description}
+    Eventi completati: {', '.join(current_chapter.completed_events)}
+    Evento casuale (se presente):
+    {random_event.description if random_event else "Nessun evento casuale"}
+    Modello di scenario:
     {template.description_template}
-
-    Generate a description and choices based on this information.
-    Your response should be a valid JSON object with 'description' and 'choices' fields.
-    The 'choices' field should be a list of objects, each with 'text' and 'action' fields.
-    Incorporate the random event into the scenario if one is present.
-    Ensure the scenario aligns with the current chapter's narrative and the pet's development.
-    Maintain narrative continuity from the previous scenario and interaction.
+    Genera una descrizione e delle scelte basate su queste informazioni.
+    La tua risposta dovrebbe essere un oggetto JSON valido con campi 'description' e 'choices'.
+    Il campo 'choices' dovrebbe essere una lista di oggetti, ciascuno con campi 'text' e 'action'.
+    Incorpora l'evento casuale nello scenario se presente.
+    Assicurati che lo scenario sia allineato con la narrazione del capitolo attuale e lo sviluppo dell'animale.
+    Mantieni la continuità narrativa dallo scenario e dall'interazione precedenti.
     """
 
     try:
@@ -138,7 +92,7 @@ def generate_dynamic_scenario(
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": "Generate a scenario based on the given information."}
+                {"role": "user", "content": "Genera uno scenario basato sulle informazioni fornite."}
             ]
         )
 

@@ -118,6 +118,7 @@ def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelt
 
 def process_interaction_as_pet_memory(
     interaction: str,
+    scenario: str,
     initial_emotional_state: EmotionalState,
     initial_physical_state: PhysicalState,
     emotional_delta: EmotionalStateDelta,
@@ -125,53 +126,46 @@ def process_interaction_as_pet_memory(
 ) -> Memory:
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
     system_message = """
-    You are an AI assistant that generates subjective memories for a virtual pet based on interactions and state changes.
-    Create a short, first-person memory from the pet's perspective, reflecting the interaction and how it made the pet feel.
-    The memory should be a single sentence, written in simple language as if from the pet's point of view.
-    Use the initial states and the changes to inform the pet's experience and reaction.
-    Your response should be a valid JSON object with 'memory' and 'importance' fields.
-    The 'memory' field should contain the generated memory text, and the 'importance' field should be a float between 0 and 1.
+    Sei un assistente AI che genera ricordi soggettivi per un animale virtuale basati su interazioni e cambiamenti di stato.
+    Crea un breve ricordo in prima persona dal punto di vista dell'animale, riflettendo l'interazione e come ha fatto sentire l'animale.
+    Il ricordo dovrebbe essere una singola frase, scritta in un linguaggio semplice come se fosse dal punto di vista dell'animale.
+    Usa gli stati iniziali e i cambiamenti per informare l'esperienza e la reazione dell'animale.
+    La tua risposta dovrebbe essere un oggetto JSON valido con i campi 'memory' e 'importance'.
+    Il campo 'memory' dovrebbe contenere il testo del ricordo generato, e il campo 'importance' dovrebbe essere un valore float tra 0 e 1.
     """
-
-
     # Prepare the input for the AI
     pet_state_info = f"""
-    Initial Emotional State: {initial_emotional_state}
-    Initial Physical State: {initial_physical_state}
-    Emotional Changes: {emotional_delta.variable_deltas}
-    Physical Changes: {physical_delta.variable_deltas}
+    Stato emotivo iniziale: {initial_emotional_state}
+    Stato fisico iniziale: {initial_physical_state}
+    Cambiamenti emotivi: {emotional_delta.variable_deltas}
+    Cambiamenti fisici: {physical_delta.variable_deltas}
     """
-
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Use the appropriate model
+            model="gpt-4o-mini",  # Usa il modello appropriato
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": f"Interaction: {interaction}\n{pet_state_info}"}
+                {"role": "user", "content": f"Scenario: {scenario}\nInterazione: {interaction}\n{pet_state_info}"}
             ]
         )
-
         if response.choices[0].finish_reason == "length":
-            raise ValueError("Response was cut off. Try a shorter interaction or increase max_tokens.")
-
+            raise ValueError("La risposta è stata troncata. Prova una interazione più breve o aumenta max_tokens.")
         memory_data = json.loads(response.choices[0].message.content)
-        
+       
         # Assuming the AI returns a JSON object with 'memory' and 'importance' fields
-        memory_content = memory_data.get('memory', "I remember something happening, but it's fuzzy.")
+        memory_content = memory_data.get('memory', "Ricordo qualcosa che è successo, ma è sfocato.")
         memory_importance = float(memory_data.get('importance', 0.5))  # Default to 0.5 if not provided
-
         return Memory(content=memory_content, importance=memory_importance)
-
     except json.JSONDecodeError:
-        print("Error: Invalid JSON response from API")
-        return Memory(content="I'm not sure what happened.", importance=0.1)
+        print("Errore: Risposta JSON non valida dall'API")
+        return Memory(content="Non sono sicuro di cosa sia successo.", importance=0.1)
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        return Memory(content="Something happened, but I can't quite remember.", importance=0.1)
-    
+        print(f"Si è verificato un errore: {str(e)}")
+        return Memory(content="È successo qualcosa, ma non riesco a ricordare bene.", importance=0.1)
+
+
 def process_interaction_for_pet_response(
     interaction: str,
     initial_emotional_state: EmotionalState,

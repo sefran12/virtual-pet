@@ -27,3 +27,5 @@ class LongTermMemory:
             getattr(self, category)[key] = memory
         else:
             raise ValueError(f"Invalid category: {category}")
+        
+

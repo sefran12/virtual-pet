@@ -21,7 +21,7 @@ class Pet:
     age: int
     species: str
 
-    def process_interaction(self, interaction: str) -> str:
+    def process_interaction(self, interaction: str, scenario: str) -> str:
         # Store initial states
         initial_emotional_state = self.emotional_state
         initial_physical_state = self.physical_state
@@ -37,6 +37,7 @@ class Pet:
         # Generate memory
         memory = process_interaction_as_pet_memory(
             interaction,
+            scenario,
             initial_emotional_state,
             initial_physical_state,
             emotional_delta,
@@ -53,21 +54,20 @@ class Pet:
             self.short_term_memory.events[-1] if self.short_term_memory.events else None,
             self.physical_state.description
         )
-
+        
         # Update pet state
         self.emotional_state = new_emotional_state
         self.physical_state = new_physical_state
         self.short_term_memory.events.append(memory)
-
         return response
 
     def summarize_state(self) -> str:
         return f"""
-        Name: {self.name}
-        Age: {self.age}
-        Species: {self.species}
-        Physical Description: {self.physical_state.description}
-        Emotional State: {self.emotional_state}
-        Physical State: {self.physical_state.variables}
-        Recent Memory: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'No recent memories'}
+        Nome: {self.name}
+        Età: {self.age}
+        Specie: {self.species}
+        Descrizione fisica: {self.physical_state.description}
+        Stato emotivo: {self.emotional_state}
+        Stato fisico: {self.physical_state.variables}
+        Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}
         """

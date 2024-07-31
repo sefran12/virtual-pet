@@ -1,8 +1,8 @@
 # src/game/game_state.py
 from dataclasses import dataclass
 from typing import Optional
-from src.core.pet import Pet
-from .scenario import Scenario
+from src.pet.pet import Pet
+from ..narration.scenario import Scenario
 
 @dataclass
 class GameState:

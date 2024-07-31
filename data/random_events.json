@@ -1,0 +1,14 @@
+[
+    {
+        "description": "A sudden thunderstorm breaks out!",
+        "probability": 0.001
+    },
+    {
+        "description": "A friendly critter appears.",
+        "probability": 0.0015
+    },
+    {
+        "description": "You find an interesting object.",
+        "probability": 0.002
+    }
+]

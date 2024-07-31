@@ -1,10 +1,14 @@
 # main.py
-from src.core.pet import Pet
-from src.core.states import EmotionalState, PhysicalState, PhysicalDescription, LatentVariable
-from src.core.memory import LongTermMemory, ShortTermMemory
+
+import textwrap
+from colorama import Fore, Back, Style, init
+
+from src.pet.pet import Pet
+from src.pet.states import EmotionalState, PhysicalState, PhysicalDescription, LatentVariable
+from src.pet.memory import LongTermMemory, ShortTermMemory
 from src.game.game import Game
-from src.game.scenario import generate_dynamic_scenario
-from src.game.chapter import Chapter, ChapterEvent
+from src.narration.scenario import generate_dynamic_scenario
+from src.narration.chapter import Chapter, ChapterEvent
 from src.game.game_state import GameState
 
 
@@ -44,86 +48,112 @@ def create_chapters():
     return [
         Chapter(
             id="chapter1",
-            title="Finding the Pet",
-            description="The player, An old swordmage, finds a silver egg in an old dungeon.",
+            title="Alla ricerca dell'animale",
+            description="Il giocatore, un vecchio magospada, trova un uovo d'argento in un vecchio dungeon.",
             events=[
                 ChapterEvent(
-                    description="Egg Hatching",
-                    trigger_condition=lambda game_state: game_state.pet.age >= 0.5,  # After a few interactions
-                    action=lambda game_state: setattr(game_state.pet, 'species', 'drake')
+                    description="Schiusura dell'uovo",
+                    trigger_condition=lambda game_state: game_state.pet.age >= 0.5,  # Dopo alcune interazioni
+                    action=lambda game_state: setattr(game_state.pet, 'species', 'drago')
                 ),
                 ChapterEvent(
-                    description="Naming the Drakeling",
-                    trigger_condition=lambda game_state: game_state.pet.species == 'drake' and game_state.pet.emotional_state.variables[1].value > 50,  # attachment > 50
-                    action=lambda game_state: setattr(game_state.pet, 'name', 'Silverwing')
+                    description="Dare un nome al piccolo drago",
+                    trigger_condition=lambda game_state: game_state.pet.species == 'drago' and game_state.pet.emotional_state.variables[1].value > 50,  # attaccamento > 50
+                    action=lambda game_state: setattr(game_state.pet, 'name', "Ala d'Argento")
                 )
             ],
             age_increment=1
         ),
         Chapter(
             id="chapter2",
-            title="Months of Adventure",
-            description="The player, a swordmage, and the drakeling embark on various adventures.",
+            title="Mesi di avventura",
+            description="Il giocatore, un magospada, e il piccolo drago intraprendono varie avventure.",
             events=[
                 ChapterEvent(
-                    description="First Flight",
-                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[1].value > 70,  # growth > 70
-                    action=lambda game_state: print("Silverwing takes its first flight!")
+                    description="Primo volo",
+                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[1].value > 70,  # crescita > 70
+                    action=lambda game_state: print("Ala d'Argento fa il suo primo volo!")
                 ),
                 ChapterEvent(
-                    description="Magical Awakening",
-                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[3].value > 50,  # magical_power > 50
-                    action=lambda game_state: print("Silverwing discovers its innate magical abilities!")
+                    description="Risveglio magico",
+                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[3].value > 50,  # potere magico > 50
+                    action=lambda game_state: print("Ala d'Argento scopre le sue abilità magiche innate!")
                 )
             ],
-            age_increment=11  # This will bring the drake to 12 months old (1 year)
+            age_increment=11  # Questo porterà il drago a 12 mesi di età (1 anno)
         ),
         Chapter(
             id="chapter3",
-            title="Confronting the Dark Lord's General",
-            description="The swordmage and the now young drake face one of the Dark Lord's generals.",
+            title="Affrontare il generale del Signore Oscuro",
+            description="Il magospada e il giovane drago affrontano uno dei generali del Signore Oscuro.",
             events=[
                 ChapterEvent(
-                    description="Epic Battle",
-                    trigger_condition=lambda game_state: game_state.pet.age >= 12,  # Drake is now 1 year old
-                    action=lambda game_state: print("Silverwing and the swordmage engage in an epic battle against the Dark Lord's general!")
+                    description="Battaglia epica",
+                    trigger_condition=lambda game_state: game_state.pet.age >= 12,  # Il drago ha ora 1 anno
+                    action=lambda game_state: print("Ala d'Argento e il magospada si impegnano in una battaglia epica contro il generale del Signore Oscuro!")
                 )
             ],
             age_increment=0
         )
     ]
 
+
 def main():
+    init(autoreset=True)  # Initialize colorama
     pet = create_initial_pet()
     chapters = create_chapters()
     initial_scenario = generate_dynamic_scenario(pet, None, None, None, chapters[0])
     game = Game(pet, initial_scenario, chapters)
-
+    
     while True:
-        print(game.current_scenario.description)
-        for i, choice in enumerate(game.current_scenario.choices, 1):
-            print(f"{i}. {choice.text}")
-        print(f"{len(game.current_scenario.choices) + 1}. [Freeform Action]")
-        print("Additional options:")
-        print("- Enter 'state' to see detailed pet state")
-        print("- Enter 'memories' to see pet's memories")
-        print("- Enter 'quit' to exit the game")
-
-        user_input = input("Enter your choice: ")
+        print_scenario(game.current_scenario)
+        print_choices(game.current_scenario.choices)
+        print_additional_options()
+        
+        user_input = input(f"{Fore.YELLOW}Inserisci la tua scelta: {Style.RESET_ALL}")
         if user_input.lower() == 'quit':
             break
-
+        
         result = game.process_message(user_input)
         
         if 'special_action' in result:
-            print(result['content'])
+            print_wrapped(result['content'], Fore.CYAN)
         else:
-            print(f"Pet's response: {result['pet_response']}")
-            print(result["pet_state"])
-
+            print_pet_response(result['pet_response'])
+            print_pet_state(result['pet_state'])
+        
         if game.current_chapter_index >= len(game.chapters):
-            print("Congratulations! You've completed all chapters.")
+            print(f"\n{Fore.GREEN}{Style.BRIGHT}Congratulazioni! Hai completato tutti i capitoli.{Style.RESET_ALL}")
             break
+
+def print_scenario(scenario):
+    print(f"\n{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}")
+    print_wrapped(scenario.description, Fore.CYAN)
+    print(f"{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}\n")
+
+def print_choices(choices):
+    print(f"{Fore.MAGENTA}Scelte disponibili:{Style.RESET_ALL}")
+    for i, choice in enumerate(choices, 1):
+        print(f"{Fore.YELLOW}{i}. {Style.RESET_ALL}{choice.text}")
+    print(f"{Fore.YELLOW}{len(choices) + 1}. {Style.RESET_ALL}[Azione Libera]")
+
+def print_additional_options():
+    print(f"\n{Fore.MAGENTA}Opzioni aggiuntive:{Style.RESET_ALL}")
+    print(f"- Digita '{Fore.YELLOW}state{Style.RESET_ALL}' per vedere lo stato dettagliato dell'animale")
+    print(f"- Digita '{Fore.YELLOW}memories{Style.RESET_ALL}' per vedere i ricordi dell'animale")
+    print(f"- Digita '{Fore.YELLOW}quit{Style.RESET_ALL}' per uscire dal gioco")
+
+def print_pet_response(response):
+    print(f"\n{Fore.GREEN}Risposta dell'animale:{Style.RESET_ALL}")
+    print_wrapped(response, Fore.WHITE)
+
+def print_pet_state(state):
+    print(f"\n{Fore.MAGENTA}Stato dell'animale:{Style.RESET_ALL}")
+    print_wrapped(state, Fore.WHITE)
+
+def print_wrapped(text, color=Fore.WHITE, width=70):
+    for line in textwrap.wrap(text, width=width):
+        print(f"{color}{line}{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     main()
