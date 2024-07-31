@@ -1,4 +1,4 @@
-# src\core\memory.py
+# src\pet\memory.py
 from dataclasses import dataclass, field
 from typing import Dict, List
 

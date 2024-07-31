@@ -1,4 +1,4 @@
-# src/game/game.py
+# src\game\game.py
 from typing import List, Dict, Optional, Union
 from src.pet.pet import Pet
 from ..narration.scenario import Scenario, generate_dynamic_scenario

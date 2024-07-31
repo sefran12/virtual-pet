@@ -49,7 +49,7 @@ def create_chapters():
         Chapter(
             id="chapter1",
             title="Alla ricerca dell'animale",
-            description="Il giocatore, un vecchio magospada, trova un uovo d'argento in un vecchio dungeon.",
+            description="Il giocatore e un vecchio mago, trova un uovo d'argento in un vecchio dungeon.",
             events=[
                 ChapterEvent(
                     description="Schiusura dell'uovo",

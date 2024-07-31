@@ -1,4 +1,4 @@
-# src/core/pet.py
+# src\pet\pet.py
 from dataclasses import dataclass
 from .states import EmotionalState, PhysicalState
 from .memory import LongTermMemory, ShortTermMemory
@@ -54,7 +54,7 @@ class Pet:
             self.short_term_memory.events[-1] if self.short_term_memory.events else None,
             self.physical_state.description
         )
-        
+
         # Update pet state
         self.emotional_state = new_emotional_state
         self.physical_state = new_physical_state
@@ -63,11 +63,11 @@ class Pet:
 
     def summarize_state(self) -> str:
         return f"""
-        Nome: {self.name}
-        Età: {self.age}
-        Specie: {self.species}
-        Descrizione fisica: {self.physical_state.description}
-        Stato emotivo: {self.emotional_state}
-        Stato fisico: {self.physical_state.variables}
-        Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}
+        Nome: {self.name}\n
+        Età: {self.age}\n
+        Specie: {self.species}\n
+        Descrizione fisica: {self.physical_state.description}\n
+        Stato emotivo: {self.emotional_state}\n
+        Stato fisico: {self.physical_state.variables}\n
+        Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}\n
         """

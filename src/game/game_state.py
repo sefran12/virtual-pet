@@ -1,4 +1,4 @@
-# src/game/game_state.py
+# src\game\game_state.py
 from dataclasses import dataclass
 from typing import Optional
 from src.pet.pet import Pet

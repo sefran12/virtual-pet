@@ -1,3 +1,4 @@
+# collect.py
 import os
 
 def collect_py_contents(root_dir):

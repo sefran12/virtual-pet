@@ -1,5 +1,4 @@
-
-# src/game/scenario.py
+# src\narration\scenario.py
 from dataclasses import dataclass, field
 from typing import List, Optional
 from ..game.choices import ScenarioChoice

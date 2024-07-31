@@ -1,4 +1,4 @@
-# src\core\updaters.py
+# src\pet\updaters.py
 from typing import List, Dict
 import os
 import json

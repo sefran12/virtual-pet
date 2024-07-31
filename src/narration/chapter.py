@@ -1,4 +1,4 @@
-# src/game/chapter.py
+# src\narration\chapter.py
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable
 

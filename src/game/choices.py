@@ -1,4 +1,4 @@
-# src/game/choices.py
+# src\game\choices.py
 from dataclasses import dataclass
 from typing import Callable
 
