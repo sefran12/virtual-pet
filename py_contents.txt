@@ -1,0 +1,939 @@
+# main.py
+
+import textwrap
+from colorama import Fore, Back, Style, init
+
+from src.pet.pet import Pet
+from src.pet.states import EmotionalState, PhysicalState, PhysicalDescription, LatentVariable
+from src.pet.memory import LongTermMemory, ShortTermMemory
+from src.game.game import Game
+from src.narration.scenario import generate_dynamic_scenario
+from src.narration.chapter import Chapter, ChapterEvent
+from src.game.game_state import GameState
+
+
+def create_initial_pet():
+    emotional_state = EmotionalState([
+        LatentVariable("curiosity", 50),
+        LatentVariable("attachment", 0),
+        LatentVariable("contentment", 50),
+        LatentVariable("aggression", 20),
+        LatentVariable("fear", 30)
+    ])
+    physical_state = PhysicalState(
+        variables=[
+            LatentVariable("energy", 100),
+            LatentVariable("growth", 0),
+            LatentVariable("health", 100),
+            LatentVariable("magical_power", 10)
+        ],
+        description=PhysicalDescription(
+            species="egg",
+            color="silver",
+            size="small",
+            distinctive_features=["intricate patterns", "faint glow"]
+        )
+    )
+    return Pet(
+        emotional_state=emotional_state,
+        physical_state=physical_state,
+        long_term_memory=LongTermMemory(),
+        short_term_memory=ShortTermMemory(),
+        name="Unknown",
+        age=0,
+        species="egg"
+    )
+
+def create_chapters():
+    return [
+        Chapter(
+            id="chapter1",
+            title="Alla ricerca dell'animale",
+            description="Il giocatore e un vecchio mago, trova un uovo d'argento in un vecchio dungeon.",
+            events=[
+                ChapterEvent(
+                    description="Schiusura dell'uovo",
+                    trigger_condition=lambda game_state: game_state.pet.age >= 0.5,  # Dopo alcune interazioni
+                    action=lambda game_state: setattr(game_state.pet, 'species', 'drago')
+                ),
+                ChapterEvent(
+                    description="Dare un nome al piccolo drago",
+                    trigger_condition=lambda game_state: game_state.pet.species == 'drago' and game_state.pet.emotional_state.variables[1].value > 50,  # attaccamento > 50
+                    action=lambda game_state: setattr(game_state.pet, 'name', "Ala d'Argento")
+                )
+            ],
+            age_increment=1
+        ),
+        Chapter(
+            id="chapter2",
+            title="Mesi di avventura",
+            description="Il giocatore, un magospada, e il piccolo drago intraprendono varie avventure.",
+            events=[
+                ChapterEvent(
+                    description="Primo volo",
+                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[1].value > 70,  # crescita > 70
+                    action=lambda game_state: print("Ala d'Argento fa il suo primo volo!")
+                ),
+                ChapterEvent(
+                    description="Risveglio magico",
+                    trigger_condition=lambda game_state: game_state.pet.physical_state.variables[3].value > 50,  # potere magico > 50
+                    action=lambda game_state: print("Ala d'Argento scopre le sue abilità magiche innate!")
+                )
+            ],
+            age_increment=11  # Questo porterà il drago a 12 mesi di età (1 anno)
+        ),
+        Chapter(
+            id="chapter3",
+            title="Affrontare il generale del Signore Oscuro",
+            description="Il magospada e il giovane drago affrontano uno dei generali del Signore Oscuro.",
+            events=[
+                ChapterEvent(
+                    description="Battaglia epica",
+                    trigger_condition=lambda game_state: game_state.pet.age >= 12,  # Il drago ha ora 1 anno
+                    action=lambda game_state: print("Ala d'Argento e il magospada si impegnano in una battaglia epica contro il generale del Signore Oscuro!")
+                )
+            ],
+            age_increment=0
+        )
+    ]
+
+
+def main():
+    init(autoreset=True)  # Initialize colorama
+    pet = create_initial_pet()
+    chapters = create_chapters()
+    initial_scenario = generate_dynamic_scenario(pet, None, None, None, chapters[0])
+    game = Game(pet, initial_scenario, chapters)
+    
+    while True:
+        print_scenario(game.current_scenario)
+        print_choices(game.current_scenario.choices)
+        print_additional_options()
+        
+        user_input = input(f"{Fore.YELLOW}Inserisci la tua scelta: {Style.RESET_ALL}")
+        if user_input.lower() == 'quit':
+            break
+        
+        result = game.process_message(user_input)
+        
+        if 'special_action' in result:
+            print_wrapped(result['content'], Fore.CYAN)
+        else:
+            print_pet_response(result['pet_response'])
+            print_pet_state(result['pet_state'])
+        
+        if game.current_chapter_index >= len(game.chapters):
+            print(f"\n{Fore.GREEN}{Style.BRIGHT}Congratulazioni! Hai completato tutti i capitoli.{Style.RESET_ALL}")
+            break
+
+def print_scenario(scenario):
+    print(f"\n{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}")
+    print_wrapped(scenario.description, Fore.CYAN)
+    print(f"{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}\n")
+
+def print_choices(choices):
+    print(f"{Fore.MAGENTA}Scelte disponibili:{Style.RESET_ALL}")
+    for i, choice in enumerate(choices, 1):
+        print(f"{Fore.YELLOW}{i}. {Style.RESET_ALL}{choice.text}")
+    print(f"{Fore.YELLOW}{len(choices) + 1}. {Style.RESET_ALL}[Azione Libera]")
+
+def print_additional_options():
+    print(f"\n{Fore.MAGENTA}Opzioni aggiuntive:{Style.RESET_ALL}")
+    print(f"- Digita '{Fore.YELLOW}state{Style.RESET_ALL}' per vedere lo stato dettagliato dell'animale")
+    print(f"- Digita '{Fore.YELLOW}memories{Style.RESET_ALL}' per vedere i ricordi dell'animale")
+    print(f"- Digita '{Fore.YELLOW}quit{Style.RESET_ALL}' per uscire dal gioco")
+
+def print_pet_response(response):
+    print(f"\n{Fore.GREEN}Risposta dell'animale:{Style.RESET_ALL}")
+    print_wrapped(response, Fore.WHITE)
+
+def print_pet_state(state):
+    print(f"\n{Fore.MAGENTA}Stato dell'animale:{Style.RESET_ALL}")
+    print_wrapped(state, Fore.WHITE)
+
+def print_wrapped(text, color=Fore.WHITE, width=70):
+    for line in textwrap.wrap(text, width=width):
+        print(f"{color}{line}{Style.RESET_ALL}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+# src\game\choices.py
+from dataclasses import dataclass
+from typing import Callable
+
+@dataclass
+class ScenarioChoice:
+    text: str
+    action: Callable[['Game', str, str], None]
+
+    def execute(self, game: 'Game', message: str, scenario: str):
+        self.action(game, message, scenario)
+
+@dataclass
+class FreeformChoice:
+    def execute(self, game: 'Game', message: str, scenario: str):
+        game.process_freeform_action(message, scenario)
+
+# src\game\game.py
+from typing import List, Dict, Optional, Union
+from src.pet.pet import Pet
+from ..narration.scenario import Scenario, generate_dynamic_scenario
+from .choices import ScenarioChoice, FreeformChoice
+from src.utils.formatters import format_pet_state, format_pet_memories
+from ..narration.chapter import Chapter
+from .game_state import GameState
+from src.pet.updaters import update_pet_physical_description
+
+
+class Game:
+    def __init__(self, pet: Pet, initial_scenario: Scenario, chapters: List[Chapter]):
+        self.pet = pet
+        self.current_scenario = initial_scenario
+        self.previous_scenario: Optional[Scenario] = None
+        self.last_interaction: Optional[str] = None
+        self.last_pet_response: Optional[str] = None
+        self.chapters = chapters
+        self.current_chapter_index = 0
+
+    def get_game_state(self) -> GameState:
+        return GameState(
+            pet=self.pet,
+            current_scenario=self.current_scenario,
+            previous_scenario=self.previous_scenario,
+            last_interaction=self.last_interaction,
+            last_pet_response=self.last_pet_response,
+            current_chapter_index=self.current_chapter_index,
+        )
+
+    def process_message(self, message: str) -> dict:
+        if message == "state":
+            return {
+                "special_action": "show_state",
+                "content": format_pet_state(self.pet),
+            }
+        elif message == "memories":
+            return {
+                "special_action": "show_memories",
+                "content": format_pet_memories(self.pet),
+            }
+        elif message.isdigit():
+            choice_index = int(message) - 1
+            if 0 <= choice_index < len(self.current_scenario.choices):
+                choice = self.current_scenario.choices[choice_index]
+                return self.execute_choice(
+                    choice, "", self.current_scenario.description
+                )
+            elif choice_index == len(self.current_scenario.choices):
+                return self.execute_choice(
+                    FreeformChoice(), "", self.current_scenario.description
+                )
+        return self.execute_choice(
+            FreeformChoice(), message, self.current_scenario.description
+        )
+
+    def execute_choice(
+        self, choice: Union[ScenarioChoice, FreeformChoice], message: str, scenario: str
+    ) -> dict:
+        choice.execute(self, message, scenario)
+        self.generate_next_scenario()
+        self.update_chapter()
+        return {
+            "scenario": self.current_scenario.description,
+            "choices": [choice.text for choice in self.current_scenario.choices],
+            "pet_state": format_pet_state(self.pet),
+            "pet_response": self.last_pet_response,
+        }
+
+    def update_pet(self, interaction: str, scenario: str):
+        self.last_interaction = interaction
+        self.last_pet_response = self.pet.process_interaction(interaction, scenario)
+        current_chapter = self.chapters[self.current_chapter_index]
+        current_chapter.add_to_narrative(
+            self.current_scenario.description, interaction, self.last_pet_response
+        )
+        # Increment pet age with each interaction
+        self.pet.age += 0.1
+
+    def process_freeform_action(self, action: str, scenario: str):
+        self.update_pet(action, scenario)
+
+    def generate_next_scenario(self):
+        self.previous_scenario = self.current_scenario
+        current_chapter = self.chapters[self.current_chapter_index]
+        self.current_scenario = generate_dynamic_scenario(
+            self.pet,
+            self.previous_scenario,
+            self.last_interaction,
+            self.last_pet_response,
+            current_chapter,
+        )
+
+    def update_chapter(self):
+        current_chapter = self.chapters[self.current_chapter_index]
+        game_state = self.get_game_state()
+        triggered_events = current_chapter.update(game_state)
+
+        if current_chapter.is_completed():
+            self.evolve_pet()
+            self.current_chapter_index += 1
+            if self.current_chapter_index < len(self.chapters):
+                print(
+                    f"Starting new chapter: {self.chapters[self.current_chapter_index].title}"
+                )
+            else:
+                print("Game completed!")
+
+    def evolve_pet(self):
+        current_chapter = self.chapters[self.current_chapter_index]
+        self.pet.age += current_chapter.age_increment
+        new_description = update_pet_physical_description(
+            self.pet, current_chapter.narrative_summary
+        )
+        self.pet.physical_state.description = new_description
+
+
+# src\game\game_state.py
+from dataclasses import dataclass
+from typing import Optional
+from src.pet.pet import Pet
+from ..narration.scenario import Scenario
+
+@dataclass
+class GameState:
+    pet: Pet
+    current_scenario: Scenario
+    previous_scenario: Optional[Scenario]
+    last_interaction: Optional[str]
+    last_pet_response: Optional[str]
+    current_chapter_index: int
+
+# src\narration\chapter.py
+from dataclasses import dataclass, field
+from typing import List, Dict, Any, Callable
+
+@dataclass
+class ChapterEvent:
+    description: str
+    trigger_condition: Callable[['GameState'], bool]
+    action: Callable[['GameState'], None]
+
+@dataclass
+class Chapter:
+    id: str
+    title: str
+    description: str
+    events: List[ChapterEvent]
+    age_increment: int
+    completed_events: List[str] = field(default_factory=list)
+    narrative_summary: List[Dict[str, str]] = field(default_factory=list)
+
+    def add_to_narrative(self, scenario: str, interaction: str, pet_response: str):
+        self.narrative_summary.append({
+            "scenario": scenario,
+            "interaction": interaction,
+            "pet_response": pet_response
+        })
+
+    def update(self, game_state: 'GameState') -> List[ChapterEvent]:
+        triggered_events = []
+        for event in self.events:
+            if event.description not in self.completed_events and event.trigger_condition(game_state):
+                event.action(game_state)
+                self.completed_events.append(event.description)
+                triggered_events.append(event)
+        return triggered_events
+
+    def is_completed(self) -> bool:
+        return len(self.completed_events) == len(self.events)
+
+
+# src\narration\scenario.py
+from dataclasses import dataclass, field
+from typing import List, Optional
+from ..game.choices import ScenarioChoice
+import random
+import json
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+@dataclass
+class Scenario:
+    id: str
+    description: str
+    choices: List[ScenarioChoice]
+
+@dataclass
+class ScenarioTemplate:
+    id: str
+    description_template: str
+    choice_templates: List[dict]
+
+@dataclass
+class RandomEvent:
+    description: str
+    probability: float
+
+def load_scenario_templates(file_path: str) -> List[ScenarioTemplate]:
+    with open(file_path, 'r') as f:
+        templates_data = json.load(f)
+    return [ScenarioTemplate(**template) for template in templates_data]
+
+def load_random_events(file_path: str) -> List[RandomEvent]:
+    with open(file_path, 'r') as f:
+        events_data = json.load(f)
+    return [RandomEvent(**event) for event in events_data]
+
+def generate_dynamic_scenario(
+    pet: 'Pet',
+    previous_scenario: Optional[Scenario],
+    last_interaction: Optional[str],
+    last_pet_response: Optional[str],
+    current_chapter: 'Chapter'
+) -> Scenario:
+    templates = load_scenario_templates('data/scenario_templates.json')
+    random_events = load_random_events('data/random_events.json')
+    template = random.choice(templates)
+
+    # Check for a random event
+    random_event = None
+    for event in random_events:
+        if random.random() < event.probability:
+            random_event = event
+            break
+
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = f"""
+    Sei un assistente AI che genera scenari dinamici per un gioco di animali virtuali.
+    Usa il modello fornito, lo stato attuale dell'animale, lo scenario precedente, l'ultima interazione, la risposta dell'animale e le informazioni sul capitolo attuale per creare uno scenario unico e coinvolgente.
+    Assicurati che la narrazione fluisca continuamente dallo scenario e dall'interazione precedenti, senza iniziare arbitrariamente un nuovo giorno a meno che non sia narrativamente appropriato.
+    Stato attuale dell'animale:
+    {pet.summarize_state()}
+    Scenario precedente:
+    {previous_scenario.description if previous_scenario else "Nessuno scenario precedente"}
+    Ultima interazione:
+    {last_interaction if last_interaction else "Nessuna interazione precedente"}
+    Ultima risposta dell'animale:
+    {last_pet_response if last_pet_response else "Nessuna risposta precedente dell'animale"}
+    Capitolo attuale:
+    Titolo: {current_chapter.title}
+    Descrizione: {current_chapter.description}
+    Eventi completati: {', '.join(current_chapter.completed_events)}
+    Evento casuale (se presente):
+    {random_event.description if random_event else "Nessun evento casuale"}
+    Modello di scenario:
+    {template.description_template}
+    Genera una descrizione e delle scelte basate su queste informazioni.
+    La tua risposta dovrebbe essere un oggetto JSON valido con campi 'description' e 'choices'.
+    Il campo 'choices' dovrebbe essere una lista di oggetti, ciascuno con campi 'text' e 'action'.
+    Incorpora l'evento casuale nello scenario se presente.
+    Assicurati che lo scenario sia allineato con la narrazione del capitolo attuale e lo sviluppo dell'animale.
+    Mantieni la continuità narrativa dallo scenario e dall'interazione precedenti.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": "Genera uno scenario basato sulle informazioni fornite."}
+            ]
+        )
+
+        scenario_data = json.loads(response.choices[0].message.content)
+        
+        choices = [
+            ScenarioChoice(text=choice['text'], action=lambda game, msg, c=choice['action']: game.update_pet(c))
+            for choice in scenario_data['choices']
+        ]
+
+        return Scenario(
+            id=template.id,
+            description=scenario_data['description'],
+            choices=choices
+        )
+
+    except Exception as e:
+        print(f"An error occurred while generating the scenario: {str(e)}")
+        return Scenario(
+            id="error",
+            description="An error occurred while generating the scenario.",
+            choices=[ScenarioChoice(text="Continue", action=lambda game, msg: None)]
+        )
+
+# src\pet\memory.py
+from dataclasses import dataclass, field
+from typing import Dict, List
+
+@dataclass
+class Memory:
+    content: str
+    importance: float
+
+@dataclass
+class ShortTermMemory:
+    events: List[Memory] = field(default_factory=list)
+
+    def add_memory(self, memory: Memory):
+        self.events.append(memory)
+        # Keep only the last 10 memories
+        self.events = self.events[-10:]
+
+@dataclass
+class LongTermMemory:
+    people: Dict[str, Memory] = field(default_factory=dict)
+    events: Dict[str, Memory] = field(default_factory=dict)
+    places: Dict[str, Memory] = field(default_factory=dict)
+
+    def add_memory(self, category: str, key: str, memory: Memory):
+        if category in ['people', 'events', 'places']:
+            getattr(self, category)[key] = memory
+        else:
+            raise ValueError(f"Invalid category: {category}")
+        
+
+
+
+# src\pet\pet.py
+from dataclasses import dataclass
+from .states import EmotionalState, PhysicalState
+from .memory import LongTermMemory, ShortTermMemory
+from .updaters import (
+    process_interaction_to_emotional_delta,
+    process_interaction_to_physical_delta,
+    apply_emotional_delta,
+    apply_physical_delta,
+    process_interaction_as_pet_memory,
+    process_interaction_for_pet_response
+)
+
+@dataclass
+class Pet:
+    emotional_state: EmotionalState
+    physical_state: PhysicalState
+    long_term_memory: LongTermMemory
+    short_term_memory: ShortTermMemory
+    name: str
+    age: int
+    species: str
+
+    def process_interaction(self, interaction: str, scenario: str) -> str:
+        # Store initial states
+        initial_emotional_state = self.emotional_state
+        initial_physical_state = self.physical_state
+
+        # Process emotional changes
+        emotional_delta = process_interaction_to_emotional_delta(interaction)
+        new_emotional_state = apply_emotional_delta(self.emotional_state, emotional_delta)
+
+        # Process physical changes
+        physical_delta = process_interaction_to_physical_delta(interaction)
+        new_physical_state = apply_physical_delta(self.physical_state, physical_delta)
+
+        # Generate memory
+        memory = process_interaction_as_pet_memory(
+            interaction,
+            scenario,
+            initial_emotional_state,
+            initial_physical_state,
+            emotional_delta,
+            physical_delta
+        )
+
+        # Generate pet's response
+        response = process_interaction_for_pet_response(
+            interaction,
+            initial_emotional_state,
+            initial_physical_state,
+            emotional_delta,
+            physical_delta,
+            self.short_term_memory.events[-1] if self.short_term_memory.events else None,
+            self.physical_state.description
+        )
+
+        # Update pet state
+        self.emotional_state = new_emotional_state
+        self.physical_state = new_physical_state
+        self.short_term_memory.events.append(memory)
+        return response
+
+    def summarize_state(self) -> str:
+        return f"""
+        Nome: {self.name}\n
+        Età: {self.age}\n
+        Specie: {self.species}\n
+        Descrizione fisica: {self.physical_state.description}\n
+        Stato emotivo: {self.emotional_state}\n
+        Stato fisico: {self.physical_state.variables}\n
+        Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}\n
+        """
+
+# src\pet\states.py
+from dataclasses import dataclass
+from typing import List, Dict
+
+@dataclass
+class LatentVariable:
+    name: str
+    value: float
+
+    def __post_init__(self):
+        self.value = max(-100, min(100, self.value))  # Ensure value is between -100 and 100
+
+@dataclass
+class EmotionalState:
+    variables: List[LatentVariable]
+
+    def __post_init__(self):
+        assert len(self.variables) == 5, "EmotionalState must have exactly 5 latent variables"
+
+@dataclass
+class PhysicalDescription:
+    species: str
+    color: str
+    size: str
+    distinctive_features: List[str]
+
+@dataclass
+class PhysicalState:
+    variables: List[LatentVariable]
+    description: PhysicalDescription
+
+    def __post_init__(self):
+        assert len(self.variables) == 4, "PhysicalState must have exactly 4 latent variables"
+
+@dataclass
+class EmotionalStateDelta:
+    variable_deltas: Dict[str, float]
+
+@dataclass
+class PhysicalStateDelta:
+    variable_deltas: Dict[str, float]
+
+# src\pet\updaters.py
+from typing import List, Dict
+import os
+import json
+from openai import OpenAI
+from dotenv import load_dotenv
+
+from .memory import Memory
+from .states import LatentVariable, EmotionalState, PhysicalState, EmotionalStateDelta, PhysicalStateDelta, PhysicalDescription
+
+load_dotenv(override=True)
+
+
+    
+def apply_emotional_delta(state: EmotionalState, delta: EmotionalStateDelta) -> EmotionalState:
+    new_variables = []
+    for var in state.variables:
+        new_value = var.value + delta.variable_deltas.get(var.name, 0)
+        new_variables.append(LatentVariable(var.name, new_value))
+    return EmotionalState(new_variables)
+
+
+def apply_physical_delta(state: PhysicalState, delta: PhysicalStateDelta) -> PhysicalState:
+    new_variables = []
+    for var in state.variables:
+        new_value = var.value + delta.variable_deltas.get(var.name, 0)
+        new_variables.append(LatentVariable(var.name, new_value))
+    return PhysicalState(variables=new_variables, description=state.description)
+
+
+def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDelta:
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = """
+    You are an AI assistant that interprets interactions with a virtual pet and outputs emotional changes.
+    The pet has 5 emotional states: happiness, excitement, calmness, curiosity, and affection.
+    Each state can change between -10 and 10 based on the interaction, or remain unchanged (0).
+    Output a JSON object with the changes for each emotional state.
+    If a state is unaffected by the interaction, set its value to 0.
+    Your response should be a valid JSON object.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Use the appropriate model
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Interpret this interaction with the virtual pet: {interaction}"}
+            ]
+        )
+
+        # Check if the response was cut off
+        if response.choices[0].finish_reason == "length":
+            raise ValueError("Response was cut off. Try a shorter interaction or increase max_tokens.")
+
+        # Parse the JSON response
+        delta_dict = json.loads(response.choices[0].message.content)
+
+        # Ensure all expected keys are present
+        expected_keys = ["happiness", "excitement", "calmness", "curiosity", "affection"]
+        for key in expected_keys:
+            if key not in delta_dict:
+                delta_dict[key] = 0.0  # Default to no change if missing
+
+        # Create and return the EmotionalStateDelta
+        return EmotionalStateDelta(variable_deltas=delta_dict)
+
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON response from API")
+        return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+
+
+def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelta:
+    load_dotenv()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = """
+    You are an AI assistant that interprets interactions with a virtual pet and outputs physical state changes.
+    The pet has 4 physical states: hunger, tiredness, health, and cleanliness.
+    Each state can change between -10 and 10 based on the interaction, or remain unchanged (0).
+    Output a JSON object with the changes for each physical state.
+    If a state is unaffected by the interaction, set its value to 0.
+    Your response should be a valid JSON object.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Use the appropriate model
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Interpret this interaction with the virtual pet: {interaction}"}
+            ]
+        )
+
+        if response.choices[0].finish_reason == "length":
+            raise ValueError("Response was cut off. Try a shorter interaction or increase max_tokens.")
+
+        delta_dict = json.loads(response.choices[0].message.content)
+
+        expected_keys = ["hunger", "tiredness", "health", "cleanliness"]
+        for key in expected_keys:
+            if key not in delta_dict:
+                delta_dict[key] = 0.0  # Default to no change if missing
+
+        return PhysicalStateDelta(variable_deltas=delta_dict)
+
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON response from API")
+        return PhysicalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return PhysicalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+
+def process_interaction_as_pet_memory(
+    interaction: str,
+    scenario: str,
+    initial_emotional_state: EmotionalState,
+    initial_physical_state: PhysicalState,
+    emotional_delta: EmotionalStateDelta,
+    physical_delta: PhysicalStateDelta
+) -> Memory:
+    load_dotenv()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    system_message = """
+    Sei un assistente AI che genera ricordi soggettivi per un animale virtuale basati su interazioni e cambiamenti di stato.
+    Crea un breve ricordo in prima persona dal punto di vista dell'animale, riflettendo l'interazione e come ha fatto sentire l'animale.
+    Il ricordo dovrebbe essere una singola frase, scritta in un linguaggio semplice come se fosse dal punto di vista dell'animale.
+    Usa gli stati iniziali e i cambiamenti per informare l'esperienza e la reazione dell'animale.
+    La tua risposta dovrebbe essere un oggetto JSON valido con i campi 'memory' e 'importance'.
+    Il campo 'memory' dovrebbe contenere il testo del ricordo generato, e il campo 'importance' dovrebbe essere un valore float tra 0 e 1.
+    """
+    # Prepare the input for the AI
+    pet_state_info = f"""
+    Stato emotivo iniziale: {initial_emotional_state}
+    Stato fisico iniziale: {initial_physical_state}
+    Cambiamenti emotivi: {emotional_delta.variable_deltas}
+    Cambiamenti fisici: {physical_delta.variable_deltas}
+    """
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Usa il modello appropriato
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Scenario: {scenario}\nInterazione: {interaction}\n{pet_state_info}"}
+            ]
+        )
+        if response.choices[0].finish_reason == "length":
+            raise ValueError("La risposta è stata troncata. Prova una interazione più breve o aumenta max_tokens.")
+        memory_data = json.loads(response.choices[0].message.content)
+       
+        # Assuming the AI returns a JSON object with 'memory' and 'importance' fields
+        memory_content = memory_data.get('memory', "Ricordo qualcosa che è successo, ma è sfocato.")
+        memory_importance = float(memory_data.get('importance', 0.5))  # Default to 0.5 if not provided
+        return Memory(content=memory_content, importance=memory_importance)
+    except json.JSONDecodeError:
+        print("Errore: Risposta JSON non valida dall'API")
+        return Memory(content="Non sono sicuro di cosa sia successo.", importance=0.1)
+    except Exception as e:
+        print(f"Si è verificato un errore: {str(e)}")
+        return Memory(content="È successo qualcosa, ma non riesco a ricordare bene.", importance=0.1)
+
+
+def process_interaction_for_pet_response(
+    interaction: str,
+    initial_emotional_state: EmotionalState,
+    initial_physical_state: PhysicalState,
+    emotional_delta: EmotionalStateDelta,
+    physical_delta: PhysicalStateDelta,
+    last_memory: Memory,
+    physical_description: PhysicalDescription
+) -> str:
+    load_dotenv()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = """
+    You are an AI assistant that generates responses for a virtual pet based on interactions, state changes, and context.
+    The pet cannot talk, so the response should be a description of the pet's actions, behaviors, and apparent emotions.
+    Use the initial states, changes, last memory, and physical description to create a single sentence that encondes a vivid and engaging response, written with a succint, clear prose without complicated words.
+    Your response should be a valid JSON object with a single 'response' field containing the pet's reaction as a string.
+    """
+
+    pet_context = f"""
+    Physical Description: {physical_description}
+    Initial Emotional State: {initial_emotional_state}
+    Initial Physical State: {initial_physical_state}
+    Emotional Changes: {emotional_delta.variable_deltas}
+    Physical Changes: {physical_delta.variable_deltas}
+    Last Memory: {last_memory.content if last_memory else 'No recent memory'}
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Use the appropriate model
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": f"Interaction: {interaction}\n{pet_context}"}
+            ]
+        )
+
+        if response.choices[0].finish_reason == "length":
+            raise ValueError("Response was cut off. Try a shorter interaction or increase max_tokens.")
+
+        response_data = json.loads(response.choices[0].message.content)
+        return response_data.get('response', "The pet reacts, but it's unclear how.")
+
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON response from API")
+        return "The pet seems confused by what just happened."
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return "The pet's reaction is hard to interpret."
+    
+def update_pet_physical_description(pet: 'Pet', chapter_narrative: List[Dict[str, str]]) -> PhysicalDescription:
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_message = f"""
+    You are an AI assistant that updates the physical description of a virtual pet based on its experiences throughout a chapter.
+    Consider the pet's current state, age, and the events it has gone through to create a new, evolved description.
+
+    Current pet state:
+    {pet.summarize_state()}
+
+    Chapter narrative summary:
+    {json.dumps(chapter_narrative, indent=2)}
+
+    Generate a new physical description for the pet, including possible changes to its species, color, size, and distinctive features.
+    Your response should be a valid JSON object with 'species', 'color', 'size', and 'distinctive_features' fields.
+    The 'distinctive_features' field should be a list of strings.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": "Generate an updated physical description for the pet based on its experiences in this chapter."}
+            ]
+        )
+
+        new_description_data = json.loads(response.choices[0].message.content)
+        
+        return PhysicalDescription(
+            species=new_description_data['species'],
+            color=new_description_data['color'],
+            size=new_description_data['size'],
+            distinctive_features=new_description_data['distinctive_features']
+        )
+
+    except Exception as e:
+        print(f"An error occurred while updating the pet's physical description: {str(e)}")
+        return pet.physical_state.description  # Return the current description if there's an error
+
+
+
+
+# src/utils/formatters.py
+def format_pet_state(pet):
+    formatted_state = f"""
+{pet.name}'s Current State:
+-----------------------------
+Emotional State:
+{', '.join([f'{v.name}: {v.value}' for v in pet.emotional_state.variables])}
+
+Physical State:
+{', '.join([f'{v.name}: {v.value}' for v in pet.physical_state.variables])}
+
+Description: {pet.physical_state.description.species.capitalize()} - {pet.physical_state.description.color}, {pet.physical_state.description.size} - Age {pet.age} years
+Distinctive features: {', '.join(pet.physical_state.description.distinctive_features)}
+    """
+    return formatted_state.strip()
+
+
+def format_pet_memories(pet):
+    short_term = "\n".join(
+        [f"- {memory.content}" for memory in pet.short_term_memory.events[-5:]]
+    )
+    long_term_people = "\n".join(
+        [
+            f"- {key}: {memory.content}"
+            for key, memory in pet.long_term_memory.people.items()
+        ]
+    )
+    long_term_events = "\n".join(
+        [
+            f"- {key}: {memory.content}"
+            for key, memory in pet.long_term_memory.events.items()
+        ]
+    )
+    long_term_places = "\n".join(
+        [
+            f"- {key}: {memory.content}"
+            for key, memory in pet.long_term_memory.places.items()
+        ]
+    )
+
+    formatted_memories = f"""
+{pet.name}'s Memories:
+-----------------------------
+Recent Memories (last 5):
+{short_term}
+
+Long-term Memories:
+People:
+{long_term_people}
+
+Events:
+{long_term_events}
+
+Places:
+{long_term_places}
+    """
+    return formatted_memories.strip()

@@ -1,0 +1,42 @@
+process_interaction_for_pet_response:
+  english: |
+    Given the interaction "{interaction}", the pet's initial emotional state {initial_emotional_state},
+    initial physical state {initial_physical_state}, emotional delta {emotional_delta},
+    physical delta {physical_delta}, last memory {last_memory}, and current physical description {physical_description},
+    generate an appropriate response for the pet.
+  spanish: |
+    Dada la interacción "{interaction}", el estado emocional inicial del animal {initial_emotional_state},
+    el estado físico inicial {initial_physical_state}, el cambio emocional {emotional_delta},
+    el cambio físico {physical_delta}, el último recuerdo {last_memory}, y la descripción física actual {physical_description},
+    genera una respuesta apropiada para el animal.
+  italian: |
+    Data l'interazione "{interaction}", lo stato emotivo iniziale dell'animale {initial_emotional_state},
+    lo stato fisico iniziale {initial_physical_state}, il cambiamento emotivo {emotional_delta},
+    il cambiamento fisico {physical_delta}, l'ultimo ricordo {last_memory}, e la descrizione fisica attuale {physical_description},
+    genera una risposta appropriata per l'animale.
+
+summarize_state:
+  english: |
+    Name: {name}
+    Age: {age}
+    Species: {species}
+    Physical description: {physical_description}
+    Emotional state: {emotional_state}
+    Physical state: {physical_state}
+    Recent memory: {recent_memory}
+  spanish: |
+    Nombre: {name}
+    Edad: {age}
+    Especie: {species}
+    Descripción física: {physical_description}
+    Estado emocional: {emotional_state}
+    Estado físico: {physical_state}
+    Recuerdo reciente: {recent_memory}
+  italian: |
+    Nome: {name}
+    Età: {age}
+    Specie: {species}
+    Descrizione fisica: {physical_description}
+    Stato emotivo: {emotional_state}
+    Stato fisico: {physical_state}
+    Ricordo recente: {recent_memory}

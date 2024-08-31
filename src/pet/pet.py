@@ -1,4 +1,3 @@
-# src\pet\pet.py
 from dataclasses import dataclass
 from .states import EmotionalState, PhysicalState
 from .memory import LongTermMemory, ShortTermMemory
@@ -10,6 +9,9 @@ from .updaters import (
     process_interaction_as_pet_memory,
     process_interaction_for_pet_response
 )
+from src.utils.resource_manager import ResourceManager
+
+resource_manager = ResourceManager()
 
 @dataclass
 class Pet:
@@ -20,6 +22,7 @@ class Pet:
     name: str
     age: int
     species: str
+    language: str = 'english'
 
     def process_interaction(self, interaction: str, scenario: str) -> str:
         # Store initial states
@@ -45,7 +48,9 @@ class Pet:
         )
 
         # Generate pet's response
+        response_prompt = resource_manager.get_prompt('pet', 'process_interaction_for_pet_response', self.language)
         response = process_interaction_for_pet_response(
+            response_prompt,
             interaction,
             initial_emotional_state,
             initial_physical_state,
@@ -62,12 +67,13 @@ class Pet:
         return response
 
     def summarize_state(self) -> str:
-        return f"""
-        Nome: {self.name}\n
-        Età: {self.age}\n
-        Specie: {self.species}\n
-        Descrizione fisica: {self.physical_state.description}\n
-        Stato emotivo: {self.emotional_state}\n
-        Stato fisico: {self.physical_state.variables}\n
-        Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}\n
-        """
+        summary_template = resource_manager.get_prompt('pet', 'summarize_state', self.language)
+        return summary_template.format(
+            name=self.name,
+            age=self.age,
+            species=self.species,
+            physical_description=self.physical_state.description,
+            emotional_state=self.emotional_state,
+            physical_state=self.physical_state.variables,
+            recent_memory=self.short_term_memory.events[-1] if self.short_term_memory.events else 'No recent memory'
+        )

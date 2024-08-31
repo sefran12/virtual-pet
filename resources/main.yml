@@ -1,0 +1,112 @@
+chapter_titles:
+  chapter1:
+    english: "Searching for the Animal"
+    spanish: "En busca del animal"
+    italian: "Alla ricerca dell'animale"
+  chapter2:
+    english: "Months of Adventure"
+    spanish: "Meses de aventura"
+    italian: "Mesi di avventura"
+  chapter3:
+    english: "Facing the Dark Lord's General"
+    spanish: "Enfrentando al general del Señor Oscuro"
+    italian: "Affrontare il generale del Signore Oscuro"
+
+chapter_descriptions:
+  chapter1:
+    english: "The player, an old wizard, finds a silver egg in an old dungeon."
+    spanish: "El jugador, un viejo mago, encuentra un huevo plateado en una antigua mazmorra."
+    italian: "Il giocatore e un vecchio mago, trova un uovo d'argento in un vecchio dungeon."
+  chapter2:
+    english: "The player, a swordmage, and the little dragon embark on various adventures."
+    spanish: "El jugador, un mago espadachín, y el pequeño dragón se embarcan en varias aventuras."
+    italian: "Il giocatore, un magospada, e il piccolo drago intraprendono varie avventure."
+  chapter3:
+    english: "The swordmage and the young dragon face one of the Dark Lord's generals."
+    spanish: "El mago espadachín y el joven dragón se enfrentan a uno de los generales del Señor Oscuro."
+    italian: "Il magospada e il giovane drago affrontano uno dei generali del Signore Oscuro."
+
+user_input_prompt:
+  english: "Enter your choice: "
+  spanish: "Ingresa tu elección: "
+  italian: "Inserisci la tua scelta: "
+
+available_choices:
+  english: "Available choices:"
+  spanish: "Opciones disponibles:"
+  italian: "Scelte disponibili:"
+
+free_action:
+  english: "[Free Action]"
+  spanish: "[Acción Libre]"
+  italian: "[Azione Libera]"
+
+additional_options:
+  english: "Additional options:"
+  spanish: "Opciones adicionales:"
+  italian: "Opzioni aggiuntive:"
+
+state_command:
+  english: "state"
+  spanish: "estado"
+  italian: "state"
+
+memories_command:
+  english: "memories"
+  spanish: "recuerdos"
+  italian: "memories"
+
+quit_command:
+  english: "quit"
+  spanish: "salir"
+  italian: "quit"
+
+state_description:
+  english: "Type '{command}' to see the detailed state of the animal"
+  spanish: "Escribe '{command}' para ver el estado detallado del animal"
+  italian: "Digita '{command}' per vedere lo stato dettagliato dell'animale"
+
+memories_description:
+  english: "Type '{command}' to see the animal's memories"
+  spanish: "Escribe '{command}' para ver los recuerdos del animal"
+  italian: "Digita '{command}' per vedere i ricordi dell'animale"
+
+quit_description:
+  english: "Type '{command}' to exit the game"
+  spanish: "Escribe '{command}' para salir del juego"
+  italian: "Digita '{command}' per uscire dal gioco"
+
+pet_response:
+  english: "Animal's response:"
+  spanish: "Respuesta del animal:"
+  italian: "Risposta dell'animale:"
+
+pet_state:
+  english: "Animal's state:"
+  spanish: "Estado del animal:"
+  italian: "Stato dell'animale:"
+
+game_complete:
+  english: "Congratulations! You have completed all chapters."
+  spanish: "¡Felicidades! Has completado todos los capítulos."
+  italian: "Congratulazioni! Hai completato tutti i capitoli."
+
+dragon_name:
+  english: "Silver Wing"
+  spanish: "Ala Plateada"
+  italian: "Ala d'Argento"
+
+first_flight:
+  english: "Silver Wing takes its first flight!"
+  spanish: "¡Ala Plateada realiza su primer vuelo!"
+  italian: "Ala d'Argento fa il suo primo volo!"
+
+magical_awakening:
+  english: "Silver Wing discovers its innate magical abilities!"
+  spanish: "¡Ala Plateada descubre sus habilidades mágicas innatas!"
+  italian: "Ala d'Argento scopre le sue abilità magiche innate!"
+
+epic_battle:
+  english: "Silver Wing and the swordmage engage in an epic battle against the Dark Lord's general!"
+  spanish: "¡Ala Plateada y el mago espadachín se involucran en una batalla épica contra el general del Señor Oscuro!"
+  italian: "Ala d'Argento e il magospada si impegnano in una battaglia epica contro il generale del Signore Oscuro!"

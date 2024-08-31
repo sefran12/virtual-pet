@@ -1,4 +1,3 @@
-# src\narration\scenario.py
 from dataclasses import dataclass, field
 from typing import List, Optional
 from ..game.choices import ScenarioChoice
@@ -7,8 +6,10 @@ import json
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from src.utils.resource_manager import ResourceManager
 
 load_dotenv()
+resource_manager = ResourceManager()
 
 @dataclass
 class Scenario:
@@ -42,7 +43,8 @@ def generate_dynamic_scenario(
     previous_scenario: Optional[Scenario],
     last_interaction: Optional[str],
     last_pet_response: Optional[str],
-    current_chapter: 'Chapter'
+    current_chapter: 'Chapter',
+    language: str = 'english'
 ) -> Scenario:
     templates = load_scenario_templates('data/scenario_templates.json')
     random_events = load_random_events('data/random_events.json')
@@ -57,33 +59,17 @@ def generate_dynamic_scenario(
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    system_message = f"""
-    Sei un assistente AI che genera scenari dinamici per un gioco di animali virtuali.
-    Usa il modello fornito, lo stato attuale dell'animale, lo scenario precedente, l'ultima interazione, la risposta dell'animale e le informazioni sul capitolo attuale per creare uno scenario unico e coinvolgente.
-    Assicurati che la narrazione fluisca continuamente dallo scenario e dall'interazione precedenti, senza iniziare arbitrariamente un nuovo giorno a meno che non sia narrativamente appropriato.
-    Stato attuale dell'animale:
-    {pet.summarize_state()}
-    Scenario precedente:
-    {previous_scenario.description if previous_scenario else "Nessuno scenario precedente"}
-    Ultima interazione:
-    {last_interaction if last_interaction else "Nessuna interazione precedente"}
-    Ultima risposta dell'animale:
-    {last_pet_response if last_pet_response else "Nessuna risposta precedente dell'animale"}
-    Capitolo attuale:
-    Titolo: {current_chapter.title}
-    Descrizione: {current_chapter.description}
-    Eventi completati: {', '.join(current_chapter.completed_events)}
-    Evento casuale (se presente):
-    {random_event.description if random_event else "Nessun evento casuale"}
-    Modello di scenario:
-    {template.description_template}
-    Genera una descrizione e delle scelte basate su queste informazioni.
-    La tua risposta dovrebbe essere un oggetto JSON valido con campi 'description' e 'choices'.
-    Il campo 'choices' dovrebbe essere una lista di oggetti, ciascuno con campi 'text' e 'action'.
-    Incorpora l'evento casuale nello scenario se presente.
-    Assicurati che lo scenario sia allineato con la narrazione del capitolo attuale e lo sviluppo dell'animale.
-    Mantieni la continuità narrativa dallo scenario e dall'interazione precedenti.
-    """
+    system_message = resource_manager.get_prompt('scenario', 'generate_dynamic_scenario', language).format(
+        pet_state=pet.summarize_state(),
+        previous_scenario=previous_scenario.description if previous_scenario else "No previous scenario",
+        last_interaction=last_interaction if last_interaction else "No previous interaction",
+        last_pet_response=last_pet_response if last_pet_response else "No previous pet response",
+        chapter_title=current_chapter.title,
+        chapter_description=current_chapter.description,
+        completed_events=', '.join(current_chapter.completed_events),
+        random_event=random_event.description if random_event else "No random event",
+        scenario_template=template.description_template
+    )
 
     try:
         response = client.chat.completions.create(
@@ -91,7 +77,7 @@ def generate_dynamic_scenario(
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": "Genera uno scenario basato sulle informazioni fornite."}
+                {"role": "user", "content": "Generate a scenario based on the provided information."}
             ]
         )
 

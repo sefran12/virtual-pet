@@ -1,0 +1,167 @@
+```plantuml
+@startuml
+package game {
+    class Game {
+        - pet: Pet
+        - current_scenario: Scenario
+        - previous_scenario: Optional[Scenario]
+        - last_interaction: Optional[str]
+        - last_pet_response: Optional[str]
+        - chapters: List[Chapter]
+        - current_chapter_index: int
+        + __init__(pet: Pet, initial_scenario: Scenario, chapters: List[Chapter])
+        + get_game_state(): GameState
+        + process_message(message: str): dict
+        + execute_choice(choice: Union[ScenarioChoice, FreeformChoice], message: str, scenario: str): dict
+        + update_pet(interaction: str, scenario: str)
+        + process_freeform_action(action: str, scenario: str)
+        + generate_next_scenario()
+        + update_chapter()
+        + evolve_pet()
+    }
+
+    class GameState {
+        + pet: Pet
+        + current_scenario: Scenario
+        + previous_scenario: Optional[Scenario]
+        + last_interaction: Optional[str]
+        + last_pet_response: Optional[str]
+        + current_chapter_index: int
+    }
+
+    class ScenarioChoice {
+        + text: str
+        + action: Callable[['Game', str, str], None]
+        + execute(game: 'Game', message: str, scenario: str)
+    }
+
+    class FreeformChoice {
+        + execute(game: 'Game', message: str, scenario: str)
+    }
+}
+
+package narration {
+    class Chapter {
+        + id: str
+        + title: str
+        + description: str
+        + events: List[ChapterEvent]
+        + age_increment: int
+        + completed_events: List[str]
+        + narrative_summary: List[Dict[str, str]]
+        + add_to_narrative(scenario: str, interaction: str, pet_response: str)
+        + update(game_state: 'GameState'): List[ChapterEvent]
+        + is_completed(): bool
+    }
+
+    class ChapterEvent {
+        + description: str
+        + trigger_condition: Callable[['GameState'], bool]
+        + action: Callable[['GameState'], None]
+    }
+
+    class Scenario {
+        + id: str
+        + description: str
+        + choices: List[ScenarioChoice]
+    }
+
+    class ScenarioTemplate {
+        + id: str
+        + description_template: str
+        + choice_templates: List[dict]
+    }
+
+    class RandomEvent {
+        + description: str
+        + probability: float
+    }
+}
+
+package pet {
+    class Pet {
+        + emotional_state: EmotionalState
+        + physical_state: PhysicalState
+        + long_term_memory: LongTermMemory
+        + short_term_memory: ShortTermMemory
+        + name: str
+        + age: int
+        + species: str
+        + process_interaction(interaction: str, scenario: str): str
+        + summarize_state(): str
+    }
+
+    class EmotionalState {
+        + variables: List[LatentVariable]
+    }
+
+    class PhysicalState {
+        + variables: List[LatentVariable]
+        + description: PhysicalDescription
+    }
+
+    class LatentVariable {
+        + name: str
+        + value: float
+    }
+
+    class PhysicalDescription {
+        + species: str
+        + color: str
+        + size: str
+        + distinctive_features: List[str]
+    }
+
+    class EmotionalStateDelta {
+        + variable_deltas: Dict[str, float]
+    }
+
+    class PhysicalStateDelta {
+        + variable_deltas: Dict[str, float]
+    }
+
+    class Memory {
+        + content: str
+        + importance: float
+    }
+
+    class ShortTermMemory {
+        + events: List[Memory]
+        + add_memory(memory: Memory)
+    }
+
+    class LongTermMemory {
+        + people: Dict[str, Memory]
+        + events: Dict[str, Memory]
+        + places: Dict[str, Memory]
+        + add_memory(category: str, key: str, memory: Memory)
+    }
+}
+
+package utils {
+    class Config {
+    }
+
+    class Formatters {
+        + format_pet_state(pet: Pet): str
+        + format_pet_memories(pet: Pet): str
+    }
+}
+
+Game "1" *-- "1" Pet
+Game "1" *-- "1..*" Chapter
+Game "1" *-- "1" Scenario
+GameState "1" *-- "1" Pet
+GameState "1" *-- "1" Scenario
+Scenario "1" *-- "1..*" ScenarioChoice
+Chapter "1" *-- "1..*" ChapterEvent
+Pet "1" *-- "1" EmotionalState
+Pet "1" *-- "1" PhysicalState
+Pet "1" *-- "1" LongTermMemory
+Pet "1" *-- "1" ShortTermMemory
+PhysicalState "1" *-- "1" PhysicalDescription
+LongTermMemory "1" *-- "0..*" Memory
+ShortTermMemory "1" *-- "0..*" Memory
+
+@enduml
+```
