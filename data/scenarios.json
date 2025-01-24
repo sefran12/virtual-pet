@@ -1,14 +1,14 @@
 [
     {
       "id": "feeding_time",
-      "description": "Your pet looks hungry. What will you do?",
+      "description": "The magical egg pulses with a dimmer aura, suggesting it needs magical nourishment. What will you do?",
       "choices": [
         {
-          "text": "Feed your pet",
+          "text": "Channel your mana into the egg",
           "action": "feed_pet"
         },
         {
-          "text": "Ignore and play instead",
+          "text": "Practice magical resonance instead",
           "action": "play_with_pet"
         }
       ],
@@ -16,42 +16,42 @@
     },
     {
       "id": "play_time",
-      "description": "Your pet seems energetic. What's your move?",
+      "description": "The egg's aura flickers with vibrant energy, as if eager to interact with your magic. What's your move?",
       "choices": [
         {
-          "text": "Play with your pet",
+          "text": "Engage in magical attunement exercises",
           "action": "play_with_pet"
         },
         {
-          "text": "Let it nap instead",
+          "text": "Let it rest in a magical stasis field",
           "action": "let_pet_nap"
         }
       ]
     },
     {
       "id": "nap_time",
-      "description": "Your pet looks tired. What do you decide?",
+      "description": "The egg's magical resonance seems weak and fluctuating. What do you decide?",
       "choices": [
         {
-          "text": "Let your pet nap",
+          "text": "Create a protective magical barrier for rest",
           "action": "let_pet_nap"
         },
         {
-          "text": "Keep playing",
+          "text": "Maintain the magical connection",
           "action": "play_with_pet"
         }
       ]
     },
     {
       "id": "grooming_time",
-      "description": "Your pet could use some grooming. What's your choice?",
+      "description": "The egg's surface patterns seem to need magical realignment. What's your choice?",
       "choices": [
         {
-          "text": "Groom your pet",
+          "text": "Cast a cleansing and alignment spell",
           "action": "groom_pet"
         },
         {
-          "text": "Ignore and let it be",
+          "text": "Let the patterns settle naturally",
           "action": "ignore_pet"
         }
       ]

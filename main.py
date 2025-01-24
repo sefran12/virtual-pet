@@ -2,6 +2,7 @@
 
 import textwrap
 from colorama import Fore, Back, Style, init
+import argparse
 
 from src.pet.pet import Pet
 from src.pet.states import EmotionalState, PhysicalState, PhysicalDescription, LatentVariable
@@ -10,6 +11,7 @@ from src.game.game import Game
 from src.narration.scenario import generate_dynamic_scenario
 from src.narration.chapter import Chapter, ChapterEvent
 from src.game.game_state import GameState
+from src.utils.config import AIConfig
 
 
 def create_initial_pet():
@@ -98,12 +100,13 @@ def create_chapters():
     ]
 
 
-def main():
+def main(provider="openai"):
     init(autoreset=True)  # Initialize colorama
+    ai_config = AIConfig(provider)  # Create AI configuration
     pet = create_initial_pet()
     chapters = create_chapters()
-    initial_scenario = generate_dynamic_scenario(pet, None, None, None, chapters[0])
-    game = Game(pet, initial_scenario, chapters)
+    initial_scenario = generate_dynamic_scenario(pet, None, None, None, chapters[0], ai_config)
+    game = Game(pet, initial_scenario, chapters, ai_config)
     
     while True:
         print_scenario(game.current_scenario)
@@ -156,4 +159,7 @@ def print_wrapped(text, color=Fore.WHITE, width=70):
         print(f"{color}{line}{Style.RESET_ALL}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--provider", choices=["openai", "google"], default="openai", help="AI provider to use")
+    args = parser.parse_args()
+    main(provider=args.provider)

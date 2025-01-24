@@ -7,6 +7,7 @@ import json
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from src.utils.config import AIConfig
 
 load_dotenv()
 
@@ -42,7 +43,8 @@ def generate_dynamic_scenario(
     previous_scenario: Optional[Scenario],
     last_interaction: Optional[str],
     last_pet_response: Optional[str],
-    current_chapter: 'Chapter'
+    current_chapter: 'Chapter',
+    ai_config: AIConfig
 ) -> Scenario:
     templates = load_scenario_templates('data/scenario_templates.json')
     random_events = load_random_events('data/random_events.json')
@@ -55,7 +57,7 @@ def generate_dynamic_scenario(
             random_event = event
             break
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = ai_config.get_client()
 
     system_message = f"""
     Sei un assistente AI che genera scenari dinamici per un gioco di animali virtuali.
@@ -87,7 +89,7 @@ def generate_dynamic_scenario(
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
@@ -98,7 +100,7 @@ def generate_dynamic_scenario(
         scenario_data = json.loads(response.choices[0].message.content)
         
         choices = [
-            ScenarioChoice(text=choice['text'], action=lambda game, msg, c=choice['action']: game.update_pet(c))
+            ScenarioChoice(text=choice['text'], action=lambda game, msg, scenario, c=choice['action']: game.update_pet(c, scenario))
             for choice in scenario_data['choices']
         ]
 

@@ -10,6 +10,7 @@ from .updaters import (
     process_interaction_as_pet_memory,
     process_interaction_for_pet_response
 )
+from src.utils.config import AIConfig
 
 @dataclass
 class Pet:
@@ -21,17 +22,17 @@ class Pet:
     age: int
     species: str
 
-    def process_interaction(self, interaction: str, scenario: str) -> str:
+    def process_interaction(self, interaction: str, scenario: str, ai_config: AIConfig) -> str:
         # Store initial states
         initial_emotional_state = self.emotional_state
         initial_physical_state = self.physical_state
 
         # Process emotional changes
-        emotional_delta = process_interaction_to_emotional_delta(interaction)
+        emotional_delta = process_interaction_to_emotional_delta(interaction, ai_config)
         new_emotional_state = apply_emotional_delta(self.emotional_state, emotional_delta)
 
         # Process physical changes
-        physical_delta = process_interaction_to_physical_delta(interaction)
+        physical_delta = process_interaction_to_physical_delta(interaction, ai_config)
         new_physical_state = apply_physical_delta(self.physical_state, physical_delta)
 
         # Generate memory
@@ -41,7 +42,8 @@ class Pet:
             initial_emotional_state,
             initial_physical_state,
             emotional_delta,
-            physical_delta
+            physical_delta,
+            ai_config
         )
 
         # Generate pet's response
@@ -52,7 +54,8 @@ class Pet:
             emotional_delta,
             physical_delta,
             self.short_term_memory.events[-1] if self.short_term_memory.events else None,
-            self.physical_state.description
+            self.physical_state.description,
+            ai_config
         )
 
         # Update pet state

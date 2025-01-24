@@ -1,20 +1,20 @@
 [
     {
         "id": "daily_routine",
-        "description_template": "It's a new day for {pet_name}. What would you like to do?",
+        "description_template": "As a skilled mage, you contemplate the mystical egg before you. The arcane energies within resonate with your own magical essence. What magical approach would you like to take?",
         "choice_templates": [
-            {"text": "Feed {pet_name}", "action": "feed"},
-            {"text": "Play with {pet_name}", "action": "play"},
-            {"text": "Let {pet_name} rest", "action": "rest"}
+            {"text": "Channel magical energy into the egg", "action": "feed"},
+            {"text": "Practice magical attunement with the egg", "action": "play"},
+            {"text": "Allow the egg to absorb ambient magical energy", "action": "rest"}
         ]
     },
     {
         "id": "unexpected_event",
-        "description_template": "Something unexpected happens to {pet_name}...",
+        "description_template": "Your magical senses detect something unusual about the egg's aura...",
         "choice_templates": [
-            {"text": "Investigate", "action": "investigate"},
-            {"text": "Ignore", "action": "ignore"},
-            {"text": "Call for help", "action": "call_help"}
+            {"text": "Use your arcane sight to examine the phenomenon", "action": "investigate"},
+            {"text": "Let the magical energies settle naturally", "action": "ignore"},
+            {"text": "Consult your grimoire", "action": "call_help"}
         ]
     }
 ]

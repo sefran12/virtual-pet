@@ -7,10 +7,11 @@ from src.utils.formatters import format_pet_state, format_pet_memories
 from ..narration.chapter import Chapter
 from .game_state import GameState
 from src.pet.updaters import update_pet_physical_description
+from src.utils.config import AIConfig
 
 
 class Game:
-    def __init__(self, pet: Pet, initial_scenario: Scenario, chapters: List[Chapter]):
+    def __init__(self, pet: Pet, initial_scenario: Scenario, chapters: List[Chapter], ai_config: AIConfig):
         self.pet = pet
         self.current_scenario = initial_scenario
         self.previous_scenario: Optional[Scenario] = None
@@ -18,6 +19,7 @@ class Game:
         self.last_pet_response: Optional[str] = None
         self.chapters = chapters
         self.current_chapter_index = 0
+        self.ai_config = ai_config
 
     def get_game_state(self) -> GameState:
         return GameState(
@@ -70,7 +72,7 @@ class Game:
 
     def update_pet(self, interaction: str, scenario: str):
         self.last_interaction = interaction
-        self.last_pet_response = self.pet.process_interaction(interaction, scenario)
+        self.last_pet_response = self.pet.process_interaction(interaction, scenario, self.ai_config)
         current_chapter = self.chapters[self.current_chapter_index]
         current_chapter.add_to_narrative(
             self.current_scenario.description, interaction, self.last_pet_response
@@ -90,6 +92,7 @@ class Game:
             self.last_interaction,
             self.last_pet_response,
             current_chapter,
+            self.ai_config
         )
 
     def update_chapter(self):
@@ -111,6 +114,6 @@ class Game:
         current_chapter = self.chapters[self.current_chapter_index]
         self.pet.age += current_chapter.age_increment
         new_description = update_pet_physical_description(
-            self.pet, current_chapter.narrative_summary
+            self.pet, current_chapter.narrative_summary, self.ai_config
         )
         self.pet.physical_state.description = new_description

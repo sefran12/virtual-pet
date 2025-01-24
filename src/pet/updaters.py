@@ -7,11 +7,10 @@ from dotenv import load_dotenv
 
 from .memory import Memory
 from .states import LatentVariable, EmotionalState, PhysicalState, EmotionalStateDelta, PhysicalStateDelta, PhysicalDescription
+from src.utils.config import AIConfig
 
 load_dotenv(override=True)
 
-
-    
 def apply_emotional_delta(state: EmotionalState, delta: EmotionalStateDelta) -> EmotionalState:
     new_variables = []
     for var in state.variables:
@@ -28,8 +27,8 @@ def apply_physical_delta(state: PhysicalState, delta: PhysicalStateDelta) -> Phy
     return PhysicalState(variables=new_variables, description=state.description)
 
 
-def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDelta:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def process_interaction_to_emotional_delta(interaction: str, ai_config: AIConfig) -> EmotionalStateDelta:
+    client = ai_config.get_client()
 
     system_message = """
     You are an AI assistant that interprets interactions with a virtual pet and outputs emotional changes.
@@ -42,7 +41,7 @@ def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDe
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Use the appropriate model
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
@@ -63,20 +62,21 @@ def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDe
             if key not in delta_dict:
                 delta_dict[key] = 0.0  # Default to no change if missing
 
-        # Create and return the EmotionalStateDelta
-        return EmotionalStateDelta(variable_deltas=delta_dict)
+        # Convert all values to float and create EmotionalStateDelta
+        numeric_delta_dict = {key: float(value) for key, value in delta_dict.items()}
+        return EmotionalStateDelta(variable_deltas=numeric_delta_dict)
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from API")
+        # Ensure default values are floats
         return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
 
 
-def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelta:
-    load_dotenv()
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def process_interaction_to_physical_delta(interaction: str, ai_config: AIConfig) -> PhysicalStateDelta:
+    client = ai_config.get_client()
 
     system_message = """
     You are an AI assistant that interprets interactions with a virtual pet and outputs physical state changes.
@@ -89,7 +89,7 @@ def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelt
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Use the appropriate model
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
@@ -107,10 +107,13 @@ def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelt
             if key not in delta_dict:
                 delta_dict[key] = 0.0  # Default to no change if missing
 
-        return PhysicalStateDelta(variable_deltas=delta_dict)
+        # Convert all values to float and create PhysicalStateDelta
+        numeric_delta_dict = {key: float(value) for key, value in delta_dict.items()}
+        return PhysicalStateDelta(variable_deltas=numeric_delta_dict)
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from API")
+        # Ensure default values are floats
         return PhysicalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
     except Exception as e:
         print(f"An error occurred: {str(e)}")
@@ -122,17 +125,25 @@ def process_interaction_as_pet_memory(
     initial_emotional_state: EmotionalState,
     initial_physical_state: PhysicalState,
     emotional_delta: EmotionalStateDelta,
-    physical_delta: PhysicalStateDelta
+    physical_delta: PhysicalStateDelta,
+    ai_config: AIConfig
 ) -> Memory:
-    load_dotenv()
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = ai_config.get_client()
     system_message = """
-    Sei un assistente AI che genera ricordi soggettivi per un animale virtuale basati su interazioni e cambiamenti di stato.
-    Crea un breve ricordo in prima persona dal punto di vista dell'animale, riflettendo l'interazione e come ha fatto sentire l'animale.
-    Il ricordo dovrebbe essere una singola frase, scritta in un linguaggio semplice come se fosse dal punto di vista dell'animale.
-    Usa gli stati iniziali e i cambiamenti per informare l'esperienza e la reazione dell'animale.
+    Sei un assistente AI che genera ricordi soggettivi per un uovo magico che sta lentamente sviluppandosi.
+    Crea un breve ricordo in prima persona dal punto di vista dell'UOVO, descrivendo come percepisce le interazioni del mago.
+    Il ricordo dovrebbe essere una singola frase che descrive come l'uovo sente e percepisce l'energia magica e le azioni del mago.
+    Per esempio:
+    - "Ho sentito un caldo flusso di energia magica avvolgermi quando il mago ha toccato il mio guscio"
+    - "Le vibrazioni dell'incantesimo del mago hanno fatto danzare i miei pattern argentati"
+    - "L'energia del mago mi ha fatto sentire più forte e vivo"
+    
+    NON scrivere dal punto di vista del mago (es. NON "Quando ho lanciato l'incantesimo...").
+    Scrivi SEMPRE dal punto di vista dell'UOVO che riceve e percepisce le azioni magiche.
+    
     La tua risposta dovrebbe essere un oggetto JSON valido con i campi 'memory' e 'importance'.
-    Il campo 'memory' dovrebbe contenere il testo del ricordo generato, e il campo 'importance' dovrebbe essere un valore float tra 0 e 1.
+    Il campo 'memory' dovrebbe contenere il testo del ricordo generato dal punto di vista dell'uovo.
+    Il campo 'importance' dovrebbe essere un valore float tra 0 e 1.
     """
     # Prepare the input for the AI
     pet_state_info = f"""
@@ -143,7 +154,7 @@ def process_interaction_as_pet_memory(
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Usa il modello appropriato
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
@@ -173,10 +184,10 @@ def process_interaction_for_pet_response(
     emotional_delta: EmotionalStateDelta,
     physical_delta: PhysicalStateDelta,
     last_memory: Memory,
-    physical_description: PhysicalDescription
+    physical_description: PhysicalDescription,
+    ai_config: AIConfig
 ) -> str:
-    load_dotenv()
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = ai_config.get_client()
 
     system_message = """
     You are an AI assistant that generates responses for a virtual pet based on interactions, state changes, and context.
@@ -196,7 +207,7 @@ def process_interaction_for_pet_response(
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Use the appropriate model
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},
@@ -217,8 +228,8 @@ def process_interaction_for_pet_response(
         print(f"An error occurred: {str(e)}")
         return "The pet's reaction is hard to interpret."
     
-def update_pet_physical_description(pet: 'Pet', chapter_narrative: List[Dict[str, str]]) -> PhysicalDescription:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def update_pet_physical_description(pet: 'Pet', chapter_narrative: List[Dict[str, str]], ai_config: AIConfig) -> PhysicalDescription:
+    client = ai_config.get_client()
 
     system_message = f"""
     You are an AI assistant that updates the physical description of a virtual pet based on its experiences throughout a chapter.
@@ -237,7 +248,7 @@ def update_pet_physical_description(pet: 'Pet', chapter_narrative: List[Dict[str
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=ai_config.get_model(),
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_message},

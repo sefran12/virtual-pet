@@ -1,14 +1,14 @@
 [
     {
-        "description": "A sudden thunderstorm breaks out!",
+        "description": "A surge of wild magic ripples through your sanctum, causing the egg's aura to shimmer unusually!",
         "probability": 0.001
     },
     {
-        "description": "A friendly critter appears.",
+        "description": "A curious familiar appears, drawn to the egg's magical energy.",
         "probability": 0.0015
     },
     {
-        "description": "You find an interesting object.",
+        "description": "You detect a rare magical artifact that might resonate with the egg.",
         "probability": 0.002
     }
 ]
