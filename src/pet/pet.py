@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from .states import EmotionalState, PhysicalState
 from .memory import LongTermMemory, ShortTermMemory
+from ..core.interfaces import PetStateEvent
 from .updaters import (
     process_interaction_to_emotional_delta,
     process_interaction_to_physical_delta,
@@ -21,45 +22,54 @@ class Pet:
     age: int
     species: str
 
-    def process_interaction(self, interaction: str, scenario: str) -> str:
-        # Store initial states
-        initial_emotional_state = self.emotional_state
-        initial_physical_state = self.physical_state
+    def process_interaction(self, interaction: str, scenario: str) -> dict:
+        """Returns state delta without modifying internal state (implements PetActor protocol)"""
+        from ..core.event_system import bus
+        from ..core.state_manager import StateManager
 
-        # Process emotional changes
+        # Create state manager and take snapshot
+        state_mgr = StateManager()
+        snapshot = state_mgr.snapshot(self)  # Pass the entire pet object for proper state capture
+
+        # Calculate potential changes
         emotional_delta = process_interaction_to_emotional_delta(interaction)
-        new_emotional_state = apply_emotional_delta(self.emotional_state, emotional_delta)
-
-        # Process physical changes
         physical_delta = process_interaction_to_physical_delta(interaction)
-        new_physical_state = apply_physical_delta(self.physical_state, physical_delta)
-
-        # Generate memory
         memory = process_interaction_as_pet_memory(
-            interaction,
-            scenario,
-            initial_emotional_state,
-            initial_physical_state,
-            emotional_delta,
-            physical_delta
+            interaction, scenario, self.emotional_state, 
+            self.physical_state, emotional_delta, physical_delta
         )
 
-        # Generate pet's response
-        response = process_interaction_for_pet_response(
-            interaction,
-            initial_emotional_state,
-            initial_physical_state,
-            emotional_delta,
-            physical_delta,
-            self.short_term_memory.events[-1] if self.short_term_memory.events else None,
-            self.physical_state.description
-        )
+        # Emit events for state transitions with proper variable access
+        # Emit events for state transitions
+        emotional_values = {var.name: var.value for var in self.emotional_state.variables}
+        bus.publish(PetStateEvent.MOOD_CHANGED, {
+            'old': emotional_values,
+            'new': emotional_delta,
+            'interaction': interaction
+        })
+        
+        # Find hunger variable in the list and emit hunger change event
+        hunger_var = next((var for var in self.physical_state.variables if var.name == 'hunger'), None)
+        if hunger_var:
+            bus.publish(PetStateEvent.HUNGER_CHANGED, {
+                'old': hunger_var.value,
+                'delta': physical_delta.get('hunger', 0),
+                'source': interaction
+            })
 
-        # Update pet state
-        self.emotional_state = new_emotional_state
-        self.physical_state = new_physical_state
-        self.short_term_memory.events.append(memory)
-        return response
+        # Return delta without applying changes
+        return {
+            'emotional': emotional_delta,  # Already a dict from process_interaction_to_emotional_delta
+            'physical': physical_delta,    # Already a dict from process_interaction_to_physical_delta
+            'memory': {'content': memory.content, 'importance': memory.importance},
+            '_snapshot': snapshot
+        }
+
+    def apply_state(self, delta: dict):
+        """Apply validated state changes (implements PetActor protocol)"""
+        self.emotional_state = apply_emotional_delta(self.emotional_state, delta['emotional'])
+        self.physical_state = apply_physical_delta(self.physical_state, delta['physical'])
+        self.short_term_memory.events.append(delta['memory'])
 
     def summarize_state(self) -> str:
         return f"""
@@ -71,3 +81,25 @@ class Pet:
         Stato fisico: {self.physical_state.variables}\n
         Ricordo recente: {self.short_term_memory.events[-1] if self.short_term_memory.events else 'Nessun ricordo recente'}\n
         """
+
+    def get_snapshot(self) -> dict:
+        """Returns serializable state snapshot (implements PetActor protocol)"""
+        from dataclasses import asdict
+        return {
+            'name': self.name,
+            'age': self.age,
+            'species': self.species,
+            'emotional_state': {
+                'variables': [asdict(var) for var in self.emotional_state.variables]
+            },
+            'physical_state': {
+                'variables': [asdict(var) for var in self.physical_state.variables],
+                'description': asdict(self.physical_state.description)
+            },
+            'short_term_memory': [asdict(m) for m in self.short_term_memory.events],
+            'long_term_memory': {
+                'people': {k: asdict(v) for k, v in self.long_term_memory.people.items()},
+                'events': {k: asdict(v) for k, v in self.long_term_memory.events.items()},
+                'places': {k: asdict(v) for k, v in self.long_term_memory.places.items()}
+            }
+        }

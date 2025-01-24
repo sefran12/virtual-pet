@@ -1,6 +1,7 @@
 # main.py
 
 import textwrap
+import shutil
 from colorama import Fore, Back, Style, init
 
 from src.pet.pet import Pet
@@ -49,7 +50,7 @@ def create_chapters():
         Chapter(
             id="chapter1",
             title="Alla ricerca dell'animale",
-            description="Il giocatore e un vecchio mago, trova un uovo d'argento in un vecchio dungeon.",
+            description="Sei un vecchio mago, e trovi un uovo d'argento in un vecchio dungeon.",
             events=[
                 ChapterEvent(
                     description="Schiusura dell'uovo",
@@ -97,6 +98,42 @@ def create_chapters():
         )
     ]
 
+def get_console_width():
+    return shutil.get_terminal_size().columns
+
+def print_wrapped(text, color=Fore.WHITE, width=None):
+    if width is None:
+        width = int(get_console_width() * 0.8)
+    
+    for line in textwrap.wrap(text, width=width):
+        justified_line = line.ljust(width)
+        print(f"{color}{justified_line}{Style.RESET_ALL}")
+
+def print_scenario(scenario):
+    width = int(get_console_width() * 0.8)
+    print(f"\n{Fore.BLUE}{Style.BRIGHT}{'=' * width}{Style.RESET_ALL}")
+    print_wrapped(scenario.description, Fore.CYAN)
+    print(f"{Fore.BLUE}{Style.BRIGHT}{'=' * width}{Style.RESET_ALL}\n")
+
+def print_choices(choices):
+    print(f"{Fore.MAGENTA}Scelte disponibili:{Style.RESET_ALL}")
+    for i, choice in enumerate(choices, 1):
+        print_wrapped(f"{i}. {choice.text}", Fore.YELLOW)
+    print_wrapped(f"{len(choices) + 1}. [Azione Libera]", Fore.YELLOW)
+
+def print_additional_options():
+    print(f"\n{Fore.MAGENTA}Opzioni aggiuntive:{Style.RESET_ALL}")
+    print_wrapped(f"- Digita '{Fore.YELLOW}state{Style.RESET_ALL}' per vedere lo stato dettagliato dell'animale")
+    print_wrapped(f"- Digita '{Fore.YELLOW}memories{Style.RESET_ALL}' per vedere i ricordi dell'animale")
+    print_wrapped(f"- Digita '{Fore.YELLOW}quit{Style.RESET_ALL}' per uscire dal gioco")
+
+def print_pet_response(response):
+    print(f"\n{Fore.GREEN}Risposta dell'animale:{Style.RESET_ALL}")
+    print_wrapped(response, Fore.WHITE)
+
+def print_pet_state(state):
+    print(f"\n{Fore.MAGENTA}Stato dell'animale:{Style.RESET_ALL}")
+    print_wrapped(state, Fore.WHITE)
 
 def main():
     init(autoreset=True)  # Initialize colorama
@@ -123,37 +160,8 @@ def main():
             print_pet_state(result['pet_state'])
         
         if game.current_chapter_index >= len(game.chapters):
-            print(f"\n{Fore.GREEN}{Style.BRIGHT}Congratulazioni! Hai completato tutti i capitoli.{Style.RESET_ALL}")
+            print_wrapped(f"\n{Fore.GREEN}{Style.BRIGHT}Congratulazioni! Hai completato tutti i capitoli.{Style.RESET_ALL}")
             break
-
-def print_scenario(scenario):
-    print(f"\n{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}")
-    print_wrapped(scenario.description, Fore.CYAN)
-    print(f"{Fore.BLUE}{Style.BRIGHT}{'=' * 50}{Style.RESET_ALL}\n")
-
-def print_choices(choices):
-    print(f"{Fore.MAGENTA}Scelte disponibili:{Style.RESET_ALL}")
-    for i, choice in enumerate(choices, 1):
-        print(f"{Fore.YELLOW}{i}. {Style.RESET_ALL}{choice.text}")
-    print(f"{Fore.YELLOW}{len(choices) + 1}. {Style.RESET_ALL}[Azione Libera]")
-
-def print_additional_options():
-    print(f"\n{Fore.MAGENTA}Opzioni aggiuntive:{Style.RESET_ALL}")
-    print(f"- Digita '{Fore.YELLOW}state{Style.RESET_ALL}' per vedere lo stato dettagliato dell'animale")
-    print(f"- Digita '{Fore.YELLOW}memories{Style.RESET_ALL}' per vedere i ricordi dell'animale")
-    print(f"- Digita '{Fore.YELLOW}quit{Style.RESET_ALL}' per uscire dal gioco")
-
-def print_pet_response(response):
-    print(f"\n{Fore.GREEN}Risposta dell'animale:{Style.RESET_ALL}")
-    print_wrapped(response, Fore.WHITE)
-
-def print_pet_state(state):
-    print(f"\n{Fore.MAGENTA}Stato dell'animale:{Style.RESET_ALL}")
-    print_wrapped(state, Fore.WHITE)
-
-def print_wrapped(text, color=Fore.WHITE, width=70):
-    for line in textwrap.wrap(text, width=width):
-        print(f"{color}{line}{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     main()

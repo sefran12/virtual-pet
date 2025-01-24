@@ -59,7 +59,7 @@ def generate_dynamic_scenario(
 
     system_message = f"""
     Sei un assistente AI che genera scenari dinamici per un gioco di animali virtuali.
-    Usa il modello fornito, lo stato attuale dell'animale, lo scenario precedente, l'ultima interazione, la risposta dell'animale e le informazioni sul capitolo attuale per creare uno scenario unico e coinvolgente.
+    Usa il modello fornito, lo stato attuale dell'animale, lo scenario precedente, l'ultima interazione, la risposta dell'animale e le informazioni sul capitolo attuale per creare uno scenario unico e coinvolgente. La interazione e sempre in first person view, del giocatore.
     Assicurati che la narrazione fluisca continuamente dallo scenario e dall'interazione precedenti, senza iniziare arbitrariamente un nuovo giorno a meno che non sia narrativamente appropriato.
     Stato attuale dell'animale:
     {pet.summarize_state()}
@@ -97,10 +97,16 @@ def generate_dynamic_scenario(
 
         scenario_data = json.loads(response.choices[0].message.content)
         
-        choices = [
-            ScenarioChoice(text=choice['text'], action=lambda game, msg, c=choice['action']: game.update_pet(c))
-            for choice in scenario_data['choices']
-        ]
+        # Create choices with proper action handling
+        choices = []
+        for choice in scenario_data['choices']:
+            # Create a new function that captures the current choice action
+            choices.append(
+                ScenarioChoice(
+                    text=choice['text'],
+                    action=lambda game, msg, scenario_desc, action_text: game.update_pet(action_text, scenario_desc)
+                )
+            )
 
         return Scenario(
             id=template.id,

@@ -1,5 +1,5 @@
 # src\pet\updaters.py
-from typing import List, Dict
+from typing import List, Dict, Optional
 import os
 import json
 from openai import OpenAI
@@ -12,23 +12,27 @@ load_dotenv(override=True)
 
 
     
-def apply_emotional_delta(state: EmotionalState, delta: EmotionalStateDelta) -> EmotionalState:
+def apply_emotional_delta(state: EmotionalState, delta: dict) -> EmotionalState:
     new_variables = []
     for var in state.variables:
-        new_value = var.value + delta.variable_deltas.get(var.name, 0)
+        new_value = var.value + delta.get(var.name, 0)
+        # Clamp values between 0 and 100
+        new_value = max(0, min(100, new_value))
         new_variables.append(LatentVariable(var.name, new_value))
     return EmotionalState(new_variables)
 
 
-def apply_physical_delta(state: PhysicalState, delta: PhysicalStateDelta) -> PhysicalState:
+def apply_physical_delta(state: PhysicalState, delta: dict) -> PhysicalState:
     new_variables = []
     for var in state.variables:
-        new_value = var.value + delta.variable_deltas.get(var.name, 0)
+        new_value = var.value + delta.get(var.name, 0)
+        # Clamp values between 0 and 100
+        new_value = max(0, min(100, new_value))
         new_variables.append(LatentVariable(var.name, new_value))
     return PhysicalState(variables=new_variables, description=state.description)
 
 
-def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDelta:
+def process_interaction_to_emotional_delta(interaction: str) -> Dict[str, float]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     system_message = """
@@ -63,18 +67,18 @@ def process_interaction_to_emotional_delta(interaction: str) -> EmotionalStateDe
             if key not in delta_dict:
                 delta_dict[key] = 0.0  # Default to no change if missing
 
-        # Create and return the EmotionalStateDelta
-        return EmotionalStateDelta(variable_deltas=delta_dict)
+        # Return the delta dictionary directly
+        return delta_dict
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from API")
-        return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+        return {key: 0.0 for key in expected_keys}
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        return EmotionalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+        return {key: 0.0 for key in expected_keys}
 
 
-def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelta:
+def process_interaction_to_physical_delta(interaction: str) -> Dict[str, float]:
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -107,22 +111,22 @@ def process_interaction_to_physical_delta(interaction: str) -> PhysicalStateDelt
             if key not in delta_dict:
                 delta_dict[key] = 0.0  # Default to no change if missing
 
-        return PhysicalStateDelta(variable_deltas=delta_dict)
+        return delta_dict
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from API")
-        return PhysicalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+        return {key: 0.0 for key in expected_keys}
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        return PhysicalStateDelta(variable_deltas={key: 0.0 for key in expected_keys})
+        return {key: 0.0 for key in expected_keys}
 
 def process_interaction_as_pet_memory(
     interaction: str,
     scenario: str,
     initial_emotional_state: EmotionalState,
     initial_physical_state: PhysicalState,
-    emotional_delta: EmotionalStateDelta,
-    physical_delta: PhysicalStateDelta
+    emotional_delta: dict,
+    physical_delta: dict
 ) -> Memory:
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -138,8 +142,8 @@ def process_interaction_as_pet_memory(
     pet_state_info = f"""
     Stato emotivo iniziale: {initial_emotional_state}
     Stato fisico iniziale: {initial_physical_state}
-    Cambiamenti emotivi: {emotional_delta.variable_deltas}
-    Cambiamenti fisici: {physical_delta.variable_deltas}
+    Cambiamenti emotivi: {emotional_delta}
+    Cambiamenti fisici: {physical_delta}
     """
     try:
         response = client.chat.completions.create(
@@ -170,9 +174,9 @@ def process_interaction_for_pet_response(
     interaction: str,
     initial_emotional_state: EmotionalState,
     initial_physical_state: PhysicalState,
-    emotional_delta: EmotionalStateDelta,
-    physical_delta: PhysicalStateDelta,
-    last_memory: Memory,
+    emotional_delta: dict,
+    physical_delta: dict,
+    last_memory: Optional[dict],
     physical_description: PhysicalDescription
 ) -> str:
     load_dotenv()
@@ -189,9 +193,9 @@ def process_interaction_for_pet_response(
     Physical Description: {physical_description}
     Initial Emotional State: {initial_emotional_state}
     Initial Physical State: {initial_physical_state}
-    Emotional Changes: {emotional_delta.variable_deltas}
-    Physical Changes: {physical_delta.variable_deltas}
-    Last Memory: {last_memory.content if last_memory else 'No recent memory'}
+    Emotional Changes: {emotional_delta}
+    Physical Changes: {physical_delta}
+    Last Memory: {last_memory['content'] if last_memory else 'No recent memory'}
     """
 
     try:

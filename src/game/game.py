@@ -2,6 +2,7 @@
 from typing import List, Dict, Optional, Union
 from src.pet.pet import Pet
 from ..narration.scenario import Scenario, generate_dynamic_scenario
+from ..core.interfaces import GameEvent
 from .choices import ScenarioChoice, FreeformChoice
 from src.utils.formatters import format_pet_state, format_pet_memories
 from ..narration.chapter import Chapter
@@ -69,14 +70,62 @@ class Game:
         }
 
     def update_pet(self, interaction: str, scenario: str):
-        self.last_interaction = interaction
-        self.last_pet_response = self.pet.process_interaction(interaction, scenario)
-        current_chapter = self.chapters[self.current_chapter_index]
-        current_chapter.add_to_narrative(
-            self.current_scenario.description, interaction, self.last_pet_response
-        )
-        # Increment pet age with each interaction
-        self.pet.age += 0.1
+        from ..core.event_system import bus
+        from ..core.state_manager import StateManager
+        
+        # Create state manager and take snapshot before changes
+        state_manager = StateManager()
+        initial_snapshot = state_manager.snapshot(self.pet)
+        
+        try:
+            # Get state delta without applying
+            delta = self.pet.process_interaction(interaction, scenario)
+            
+            # Validate delta structure
+            required_keys = {'emotional', 'physical', 'memory'}
+            if not all(key in delta for key in required_keys):
+                raise ValueError(f"Invalid delta structure. Required keys: {required_keys}")
+            
+            # Apply validated changes
+            self.pet.apply_state(delta)
+            
+            # Get pet's response through the response processor
+            from src.pet.updaters import process_interaction_for_pet_response
+            
+            # Record interaction details
+            self.last_interaction = interaction
+            self.last_pet_response = process_interaction_for_pet_response(
+                interaction,
+                self.pet.emotional_state,
+                self.pet.physical_state,
+                delta['emotional'],
+                delta['physical'],
+                delta['memory'] if delta['memory'] else None,
+                self.pet.physical_state.description
+            )
+            
+            # Update chapter narrative
+            current_chapter = self.chapters[self.current_chapter_index]
+            current_chapter.add_to_narrative(
+                self.current_scenario.description, interaction, self.last_pet_response
+            )
+            
+            # Take final snapshot and emit game event
+            final_snapshot = state_manager.snapshot(self.pet)
+            bus.publish(GameEvent.INTERACTION_COMPLETED, {
+                'interaction': interaction,
+                'scenario': scenario,
+                'initial_state': initial_snapshot,
+                'final_state': final_snapshot
+            })
+            
+            # Increment pet age (only if interaction was successful)
+            self.pet.age += 0.1
+            
+        except Exception as e:
+            # On error, restore initial state and re-raise
+            self.pet = state_manager.restore(initial_snapshot)
+            raise RuntimeError(f"Failed to update pet state: {str(e)}")
 
     def process_freeform_action(self, action: str, scenario: str):
         self.update_pet(action, scenario)
